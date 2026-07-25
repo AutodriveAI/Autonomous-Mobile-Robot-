@@ -1,0 +1,29 @@
+{
+  "version": 4,
+  "configurations": [
+    {
+      "name": "STM32F401RE",
+      "compilerPath": "/usr/bin/arm-none-eabi-gcc",
+      "intelliSenseMode": "linux-gcc-arm",
+      "cStandard": "gnu11",
+      "defines": [
+        "DEBUG",
+        "USE_HAL_DRIVER",
+        "STM32F401xE"
+      ],
+      "compilerArgs": [
+        "-mcpu=cortex-m4",
+        "-mthumb",
+        "-mfpu=fpv4-sp-d16",
+        "-mfloat-abi=hard"
+      ],
+      "includePath": [
+        "${workspaceFolder}/Core/Inc",
+        "${workspaceFolder}/Drivers/STM32F4xx_HAL_Driver/Inc",
+        "${workspaceFolder}/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy",
+        "${workspaceFolder}/Drivers/CMSIS/Device/ST/STM32F4xx/Include",
+        "${workspaceFolder}/Drivers/CMSIS/Include"
+      ]
+    }
+  ]
+}

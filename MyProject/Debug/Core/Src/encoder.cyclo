@@ -1,0 +1,5 @@
+../Core/Src/encoder.c:11:6:Encoder_Init	3
+../Core/Src/encoder.c:31:10:Encoder_GetLeftCount	1
+../Core/Src/encoder.c:36:10:Encoder_GetRightCount	1
+../Core/Src/encoder.c:41:6:Encoder_ResetCounts	2
+../Core/Src/encoder.c:64:6:HAL_TIM_IC_CaptureCallback	5

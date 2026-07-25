@@ -1,0 +1,5 @@
+../Core/Src/encoder.c:11:6:Encoder_Init	16	static
+../Core/Src/encoder.c:31:10:Encoder_GetLeftCount	4	static
+../Core/Src/encoder.c:36:10:Encoder_GetRightCount	4	static
+../Core/Src/encoder.c:41:6:Encoder_ResetCounts	16	static,ignoring_inline_asm
+../Core/Src/encoder.c:64:6:HAL_TIM_IC_CaptureCallback	16	static

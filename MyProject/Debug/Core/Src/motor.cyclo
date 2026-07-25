@@ -1,0 +1,6 @@
+../Core/Src/motor.c:13:12:Motor_ClampPwm	3
+../Core/Src/motor.c:29:13:Motor_ApplySpeed	21
+../Core/Src/motor.c:53:6:Motor_Init	1
+../Core/Src/motor.c:74:6:Motor_SetLeftSpeed	1
+../Core/Src/motor.c:79:6:Motor_SetRightSpeed	1
+../Core/Src/motor.c:84:6:Motor_Stop	1
