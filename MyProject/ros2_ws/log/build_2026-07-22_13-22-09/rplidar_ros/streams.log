@@ -1,0 +1,73 @@
+[0.085s] Invoking command in '/home/jetson/ros2_ws/build/rplidar_ros': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/foxy /usr/bin/cmake /home/jetson/ros2_ws/src/rplidar_ros -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/jetson/ros2_ws/install/rplidar_ros
+[0.180s] -- Found ament_cmake: 0.9.12 (/opt/ros/foxy/share/ament_cmake/cmake)
+[0.283s] -- Using PYTHON_EXECUTABLE: /usr/bin/python3
+[1.351s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[1.409s] -- Found rclcpp: 2.4.3 (/opt/ros/foxy/share/rclcpp/cmake)
+[1.596s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[1.617s] -- Found rosidl_adapter: 1.3.1 (/opt/ros/foxy/share/rosidl_adapter/cmake)
+[2.236s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[2.507s] -- Found rmw_implementation_cmake: 1.0.4 (/opt/ros/foxy/share/rmw_implementation_cmake/cmake)
+[2.514s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[3.229s] -- Found sensor_msgs: 2.0.5 (/opt/ros/foxy/share/sensor_msgs/cmake)
+[3.778s] -- Found std_srvs: 2.0.5 (/opt/ros/foxy/share/std_srvs/cmake)
+[4.198s] -- Configuring done
+[4.323s] -- Generating done
+[4.367s] -- Build files have been written to: /home/jetson/ros2_ws/build/rplidar_ros
+[4.394s] Invoked command in '/home/jetson/ros2_ws/build/rplidar_ros' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/foxy /usr/bin/cmake /home/jetson/ros2_ws/src/rplidar_ros -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/jetson/ros2_ws/install/rplidar_ros
+[4.405s] Invoking command in '/home/jetson/ros2_ws/build/rplidar_ros': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/foxy /usr/bin/cmake --build /home/jetson/ros2_ws/build/rplidar_ros -- -j4 -l4
+[4.740s] [  2%] [32m[1mLinking CXX executable rplidar_composition[0m
+[4.746s] [  5%] [32m[1mLinking CXX executable rplidar_node[0m
+[4.751s] [  7%] [32m[1mLinking CXX executable rplidar_client[0m
+[6.178s] [ 10%] Built target rplidar_client
+[6.229s] [ 55%] Built target rplidar_node
+[6.241s] [100%] Built target rplidar_composition
+[6.287s] Invoked command in '/home/jetson/ros2_ws/build/rplidar_ros' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/foxy /usr/bin/cmake --build /home/jetson/ros2_ws/build/rplidar_ros -- -j4 -l4
+[6.334s] Invoking command in '/home/jetson/ros2_ws/build/rplidar_ros': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/foxy /usr/bin/cmake --install /home/jetson/ros2_ws/build/rplidar_ros
+[6.370s] -- Install configuration: ""
+[6.372s] -- Execute custom install script
+[6.377s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/launch/rplidar_a1_launch.py
+[6.413s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/launch/rplidar_a2m12_launch.py
+[6.447s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/launch/rplidar_a2m7_launch.py
+[6.486s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/launch/rplidar_a2m8_launch.py
+[6.519s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/launch/rplidar_a3_launch.py
+[6.557s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/launch/rplidar_c1_launch.py
+[6.591s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/launch/rplidar_s1_launch.py
+[6.626s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/launch/rplidar_s1_tcp_launch.py
+[6.660s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/launch/rplidar_s2_launch.py
+[6.698s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/launch/rplidar_s2e_launch.py
+[6.729s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/launch/rplidar_s3_launch.py
+[6.764s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/launch/rplidar_t1_launch.py
+[6.798s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/launch/view_rplidar_a1_launch.py
+[6.829s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/launch/view_rplidar_a2m12_launch.py
+[6.862s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/launch/view_rplidar_a2m7_launch.py
+[6.896s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/launch/view_rplidar_a2m8_launch.py
+[6.928s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/launch/view_rplidar_a3_launch.py
+[6.960s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/launch/view_rplidar_c1_launch.py
+[6.994s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/launch/view_rplidar_s1_launch.py
+[7.026s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/launch/view_rplidar_s1_tcp_launch.py
+[7.060s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/launch/view_rplidar_s2_launch.py
+[7.094s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/launch/view_rplidar_s2e_launch.py
+[7.125s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/launch/view_rplidar_s3_launch.py
+[7.160s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/launch/view_rplidar_t1_launch.py
+[7.194s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/rviz/rplidar_ros.rviz
+[7.228s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/lib/rplidar_ros/rplidar_node
+[7.260s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/lib/rplidar_ros/rplidar_composition
+[7.294s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/lib/rplidar_ros/rplidar_client
+[7.326s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/ament_index/resource_index/package_run_dependencies/rplidar_ros
+[7.362s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/ament_index/resource_index/parent_prefix_path/rplidar_ros
+[7.396s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/environment/ament_prefix_path.sh
+[7.428s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/environment/ament_prefix_path.dsv
+[7.462s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/environment/path.sh
+[7.496s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/environment/path.dsv
+[7.528s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/local_setup.bash
+[7.563s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/local_setup.sh
+[7.600s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/local_setup.zsh
+[7.632s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/local_setup.dsv
+[7.669s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/package.dsv
+[7.706s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/ament_index/resource_index/packages/rplidar_ros
+[7.737s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/cmake/ament_cmake_export_dependencies-extras.cmake
+[7.772s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/cmake/ament_cmake_export_include_directories-extras.cmake
+[7.807s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/cmake/rplidar_rosConfig.cmake
+[7.838s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/cmake/rplidar_rosConfig-version.cmake
+[7.873s] -- Symlinking: /home/jetson/ros2_ws/install/rplidar_ros/share/rplidar_ros/package.xml
+[7.912s] Invoked command in '/home/jetson/ros2_ws/build/rplidar_ros' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/foxy /usr/bin/cmake --install /home/jetson/ros2_ws/build/rplidar_ros
