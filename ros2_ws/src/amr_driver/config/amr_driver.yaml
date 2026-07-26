@@ -1,0 +1,24 @@
+amr_driver_node:
+  ros__parameters:
+    # NUCLEO ST-LINK virtual COM port detected on this computer.
+    serial_port: "/dev/ttyACM0"   # check with `ls /dev/ttyUSB* /dev/ttyACM*`
+    baud_rate: 115200
+
+    cmd_vel_topic: "cmd_vel"
+    odom_topic: "odom"
+    odom_frame_id: "odom"
+    base_frame_id: "base_link"
+    publish_tf: true
+
+    publish_rate_hz: 20.0
+    cmd_vel_timeout_s: 0.5
+
+    # TODO: measure these on your actual robot -- everything else in this
+    # node (cmd_vel scaling, odometry) is wrong until these are correct.
+    wheel_radius_m: 0.0325      # e.g. 65 mm diameter wheel -> 0.0325 m radius
+    wheel_separation_m: 0.20    # distance between the centers of both wheels
+
+    # From MyProject/Core/Src firmware comments/constants -- change only if
+    # you also change the firmware.
+    ticks_per_revolution: 100
+    max_ticks_per_second: 1000.0

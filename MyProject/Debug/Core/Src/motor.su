@@ -1,6 +1,0 @@
-../Core/Src/motor.c:13:12:Motor_ClampPwm	16	static
-../Core/Src/motor.c:29:13:Motor_ApplySpeed	16	static
-../Core/Src/motor.c:53:6:Motor_Init	24	static
-../Core/Src/motor.c:74:6:Motor_SetLeftSpeed	16	static
-../Core/Src/motor.c:79:6:Motor_SetRightSpeed	16	static
-../Core/Src/motor.c:84:6:Motor_Stop	8	static
