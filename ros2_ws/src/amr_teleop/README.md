@@ -1,68 +1,118 @@
 # AMR Teleoperation
 
-`amr_teleop` provides safe keyboard control for the physical AMR. It publishes
-`geometry_msgs/Twist` messages to `/cmd_vel`; `amr_driver` converts those
-robot-level velocity commands into STM32 wheel-speed commands.
+`amr_teleop` provides a project-specific command for ROS 2's standard
+`teleop_twist_keyboard` node—the terminal teleop commonly used with TurtleBot
+simulations.
 
 ```text
-keyboard → amr_teleop → /cmd_vel → amr_driver → STM32 → motors
+keyboard
+   ↓
+teleop_twist_keyboard
+   ↓  /cmd_vel (geometry_msgs/Twist)
+amr_driver
+   ↓  V,<left_ticks_per_second>,<right_ticks_per_second>
+STM32
+   ↓
+motors
+```
+
+There is no custom keyboard reader, desktop keyboard hook, or
+`command_hold_s` timer in this package. It uses the standard node unchanged.
+
+## Install the standard teleop package
+
+On the current Ubuntu 22.04 / ROS 2 Humble development computer:
+
+```bash
+sudo apt update
+sudo apt install -y ros-humble-teleop-twist-keyboard
+```
+
+On the target Ubuntu 20.04 / ROS 2 Foxy computer:
+
+```bash
+sudo apt update
+sudo apt install -y ros-foxy-teleop-twist-keyboard
+```
+
+## Build
+
+```bash
+cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
+source /opt/ros/humble/setup.bash
+colcon build --packages-select amr_teleop --symlink-install
+source install/setup.bash
 ```
 
 ## Run
 
-Install the desktop keyboard-event dependency once:
-
-```bash
-sudo apt update
-sudo apt install python3-pynput
-```
-
-Then start `amr_driver` first, and run this teleop package from an Ubuntu
-desktop session (not a headless SSH-only terminal). `pynput` receives true
-key-down and key-up events from the desktop.
-
-Controls:
-
-| Key | Action |
-|---|---|
-| Hold `w` | Forward; release to stop forward motion |
-| Hold `s` | Reverse; release to stop reverse motion |
-| Hold `a` / `d` | Rotate left / right; release to stop turning |
-| `space` or `x` | Stop |
-| `q` or Ctrl+C | Stop and quit |
-
-Unlike the former terminal reader, this node receives both key-down and
-key-up events. A held `w` remains forward for as long as it is physically held;
-releasing it immediately removes forward motion. Holding `w+a` or `w+d`
-commands a forward arc. `space` and `x` clear every active direction
-immediately.
-
-Because `pynput` listens to the desktop keyboard globally, keep this node
-stopped while using other applications. While it is running, a `w`, `a`, `s`,
-or `d` press in another application is still a robot command.
-
-## Parameters
-
-| Parameter | Default | Meaning |
-|---|---:|---|
-| `cmd_vel_topic` | `cmd_vel` | ROS topic on which this node publishes `geometry_msgs/Twist`. This must match the driver subscription. |
-| `linear_speed_mps` | `0.10` | Forward/reverse speed used by `w` and `s`, in metres per second. |
-| `angular_speed_radps` | `0.80` | Turn speed used by `a` and `d`, in radians per second. |
-| `publish_rate_hz` | `20.0` | How often the current command is published while valid. It also refreshes the driver and STM32 watchdog chain. |
-
-Override speed values when launching, for example:
-
-```bash
-ros2 run amr_teleop keyboard_teleop --ros-args \
-  -p linear_speed_mps:=0.05 -p angular_speed_radps:=0.4
-```
-
-For example, a lifted-wheel test that requests `0.3 m/s` is:
+Run this directly in an interactive terminal. Do not start it through
+`ros2 launch`, because the node must read keystrokes from that terminal.
 
 ```bash
 cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
 source /opt/ros/humble/setup.bash
 source install/setup.bash
 ros2 run amr_teleop keyboard_teleop --ros-args \
-  -p linear_speed_mps:=0.3
+  -p speed:=0.3 -p turn:=0.8
 ```
+
+The command above is an alias for:
+
+```bash
+cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args \
+  -p speed:=0.3 -p turn:=0.8
+```
+
+## Standard controls
+
+```text
+   u    i    o
+   j    k    l
+   m    ,    .
+```
+
+| Key | Command |
+|---|---|
+| `i` | Drive forward |
+| `,` | Drive backward |
+| `j` | Rotate left |
+| `l` | Rotate right |
+| `u` / `o` | Forward-left / forward-right |
+| `m` / `.` | Backward-left / backward-right |
+| `k` | Stop |
+| `q` / `z` | Increase / decrease both speeds by 10% |
+| `w` / `x` | Increase / decrease linear speed by 10% |
+| `e` / `c` | Increase / decrease angular speed by 10% |
+| Ctrl+C | Stop and exit |
+
+In this standard teleop, `w` does **not** mean forward. Press `i` to drive
+forward. A movement key sets the current command; press `k` to stop. It is not
+a physical key-release controller.
+
+## Start the physical robot
+
+Terminal 1 — start the STM32 driver:
+
+```bash
+cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+ros2 launch amr_driver amr_driver.launch.py
+```
+
+Terminal 2 — start keyboard teleop:
+
+```bash
+cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+ros2 run amr_teleop keyboard_teleop --ros-args \
+  -p speed:=0.3 -p turn:=0.8
+```
+
+For the first physical test, lift the drive wheels off the ground and keep
+`k` ready as the stop key.

@@ -16,9 +16,11 @@ amr_driver_node:
     # TODO: measure these on your actual robot -- everything else in this
     # node (cmd_vel scaling, odometry) is wrong until these are correct.
     wheel_radius_m: 0.0325      # e.g. 65 mm diameter wheel -> 0.0325 m radius
-    wheel_separation_m: 0.20    # distance between the centers of both wheels
+    wheel_separation_m: 0.175   # measured center-to-center distance between both wheels
 
     # From MyProject/Core/Src firmware comments/constants -- change only if
     # you also change the firmware.
     ticks_per_revolution: 100
-    max_ticks_per_second: 1000.0
+    # Lifted-wheel testing at about 7.8 V showed roughly 300 ticks/s as the
+    # practical safe maximum. Keep ROS commands inside that measured limit.
+    max_ticks_per_second: 300.0

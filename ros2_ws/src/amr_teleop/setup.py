@@ -1,6 +1,3 @@
-import os
-from glob import glob
-
 from setuptools import find_packages, setup
 
 package_name = 'amr_teleop'
@@ -12,9 +9,8 @@ setup(
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        (os.path.join('share', package_name, 'launch'), glob('launch/*.py')),
     ],
-    install_requires=['setuptools', 'pynput'],
+    install_requires=['setuptools'],
     zip_safe=True,
     maintainer='Nilkontha Das',
     maintainer_email='you@example.com',
@@ -23,7 +19,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'keyboard_teleop = amr_teleop.keyboard_teleop:main',
+            # Keep the project-specific command name, but run the standard ROS 2
+            # teleop_twist_keyboard implementation instead of custom key handling.
+            'keyboard_teleop = teleop_twist_keyboard:main',
         ],
     },
 )

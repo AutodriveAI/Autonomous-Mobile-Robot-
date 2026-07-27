@@ -116,10 +116,10 @@ class AmrDriverNode(Node):
         # TODO: replace with your robot's real measured values.
         self.declare_parameter('wheel_radius_m', 0.0)
         self.declare_parameter('wheel_separation_m', 0.0)
-        # From robot_control.c / wheel_pid.c comments: 100 ticks/rev,
-        # firmware clamps |V target| to 1000 ticks/s.
+        # From the present hardware test: 100 ticks/rev, about 300 ticks/s
+        # practical safe lifted-wheel maximum at roughly 7.8 V.
         self.declare_parameter('ticks_per_revolution', 100)
-        self.declare_parameter('max_ticks_per_second', 1000.0)
+        self.declare_parameter('max_ticks_per_second', 300.0)
 
     def _read_parameters(self) -> dict:
         """Copy ROS parameter values into one convenient immutable-by-convention dict."""
@@ -163,6 +163,17 @@ class AmrDriverNode(Node):
         self._target_left_ticks = int(left_ticks)
         self._target_right_ticks = int(right_ticks)
         self._last_cmd_vel_time = self.get_clock().now()
+        self.get_logger().info(
+            'cmd_vel linear.x=%.3f m/s angular.z=%.3f rad/s -> '
+            'raw ticks L=%.1f R=%.1f -> command V,%d,%d' % (
+                msg.linear.x,
+                msg.angular.z,
+                targets.left,
+                targets.right,
+                self._target_left_ticks,
+                self._target_right_ticks,
+            )
+        )
 
     def _command_timer_callback(self) -> None:
         """Refresh the MCU command or send a stop after cmd_vel goes stale."""

@@ -7,9 +7,12 @@
   <maintainer email="you@example.com">Nilkontha Das</maintainer>
   <license>MIT</license>
 
-  <depend>rclpy</depend>
-  <depend>geometry_msgs</depend>
-  <exec_depend>python3-pynput</exec_depend>
+  <!--
+    This package is intentionally only a project-specific entry point for the
+    standard ROS 2 keyboard teleop node. That node publishes geometry_msgs/Twist
+    commands on /cmd_vel and owns all terminal keyboard handling.
+  -->
+  <exec_depend>teleop_twist_keyboard</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

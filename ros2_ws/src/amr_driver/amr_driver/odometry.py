@@ -7,10 +7,9 @@ from geometry_msgs.msg import Quaternion
 
 from amr_driver.differential_drive import DifferentialDriveKinematics
 
-# Names exported by Onshape. Keeping them here isolates this CAD-specific
-# detail from the ROS node and from the general kinematics equations.
-LEFT_WHEEL_JOINT = 'revolute_2'
-RIGHT_WHEEL_JOINT = 'revolute_1'
+# Names used by the simplified robot-description URDF.
+LEFT_WHEEL_JOINT = 'left_wheel_joint'
+RIGHT_WHEEL_JOINT = 'right_wheel_joint'
 
 
 @dataclass(frozen=True)
