@@ -5,7 +5,8 @@ main URDF is simplified into a small robotics-friendly TF tree.
 
 ## Files
 
-- `urdf/robot.urdf.xacro`: active simplified robot description used by the launch file.
+- `urdf/robot.urdf.xacro`: active simplified CAD-based robot description used by display and simulation launch files.
+- `urdf/robot_sim.urdf.xacro`: lightweight primitive-only fallback model kept for Gazebo troubleshooting/performance testing.
 - `urdf/robot.urdf`: older plain-URDF copy kept as a fallback/reference.
 - `urdf/onshape_raw.urdf`: original Onshape-style export kept as a reference.
 - `meshes/`: OBJ and MTL files exported from Onshape.
@@ -63,4 +64,40 @@ cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
 source /opt/ros/humble/setup.bash
 source install/setup.bash
 ros2 launch amr_cad_description display.launch.py
+```
+
+## Spawn in Gazebo
+
+The simulation launch file starts Gazebo using this package's local
+`worlds/obstacles.world`, publishes this package's active `robot.urdf.xacro`,
+and spawns the robot into Gazebo.
+
+The package also keeps `robot_sim.urdf.xacro` as a primitive-only fallback. Use
+that only if the detailed CAD visuals become too slow for Gazebo.
+
+The local world also uses primitive obstacle shapes instead of
+`model://construction_barrel` or `model://construction_cone`, because missing
+Gazebo model assets can leave Gazebo stuck at "Preparing your world...".
+
+```bash
+cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
+source /opt/ros/humble/setup.bash
+colcon build --packages-select amr_cad_description --symlink-install
+source install/setup.bash
+ros2 launch amr_cad_description sim.launch.py
+```
+
+The default installed world path is:
+
+```text
+install/amr_cad_description/share/amr_cad_description/worlds/obstacles.world
+```
+
+You can override it with:
+
+```bash
+cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+ros2 launch amr_cad_description sim.launch.py world:=/absolute/path/to/another.world
 ```

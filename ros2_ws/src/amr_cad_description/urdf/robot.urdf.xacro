@@ -105,64 +105,66 @@
         <color rgba="0.894118 0.894118 0.894118 1" />
       </material>
     </visual>
-    <visual>
-      <origin xyz="1.17413105 0.830189451 -0.655320351" rpy="-1.57079633 2.65360929e-06 -1.57079102" />
-      <geometry>
-        <mesh filename="package://amr_cad_description/meshes/Gear_Motor__1__Cut_Extrude7_1_.obj" scale="1 1 1" />
-      </geometry>
-      <material name="0.101961_0.101961_0.101961_0.000000_0.000000">
-        <color rgba="0.101961 0.101961 0.101961 1" />
-      </material>
-    </visual>
-    <visual>
-      <origin xyz="1.17413105 0.830189451 -0.655320351" rpy="-1.57079633 2.65360929e-06 -1.57079102" />
-      <geometry>
-        <mesh filename="package://amr_cad_description/meshes/Gear_Motor__1__Split1_2__1_.obj" scale="1 1 1" />
-      </geometry>
-      <material name="1.000000_0.949020_0.909804_0.000000_0.000000">
-        <texture />
-        <color rgba="1 0.94902 0.909804 1" />
-      </material>
-    </visual>
-    <visual>
-      <origin xyz="1.17413105 0.830189451 -0.655320351" rpy="-1.57079633 2.65360929e-06 -1.57079102" />
-      <geometry>
-        <mesh filename="package://amr_cad_description/meshes/Gear_Motor__1__Fillet5_1_.obj" scale="1 1 1" />
-      </geometry>
-      <material name="0.776471_0.756863_0.737255_0.000000_0.000000">
-        <texture />
-        <color rgba="0.776471 0.756863 0.737255 1" />
-      </material>
-    </visual>
-    <visual>
-      <origin xyz="1.1741351 -0.830180778 0.538370165" rpy="-1.57079633 7.34641021e-06 -1.57079633" />
-      <geometry>
-        <mesh filename="package://amr_cad_description/meshes/Gear_Motor__1__Split1_2__1_.obj" scale="1 1 1" />
-      </geometry>
-      <material name="1.000000_0.949020_0.909804_0.000000_0.000000">
-        <color rgba="1 0.94902 0.909804 1" />
-      </material>
-    </visual>
-    <visual>
-      <origin xyz="1.1741351 -0.830180778 0.538370165" rpy="-1.57079633 7.34641021e-06 -1.57079633" />
-      <geometry>
-        <mesh filename="package://amr_cad_description/meshes/Gear_Motor__1__Fillet5_1_.obj" scale="1 1 1" />
-      </geometry>
-      <material name="0.776471_0.756863_0.737255_0.000000_0.000000">
-        <texture />
-        <color rgba="0.776471 0.756863 0.737255 1" />
-      </material>
-    </visual>
-    <visual>
-      <origin xyz="1.1741351 -0.830180778 0.538370165" rpy="-1.57079633 7.34641021e-06 -1.57079633" />
-      <geometry>
-        <mesh filename="package://amr_cad_description/meshes/Gear_Motor__1__Cut_Extrude7_1_.obj" scale="1 1 1" />
-      </geometry>
-      <material name="0.101961_0.101961_0.101961_0.000000_0.000000">
-        <texture />
-        <color rgba="0.101961 0.101961 0.101961 1" />
-      </material>
-    </visual>
+    <!-- Disabled floating Gear Motor CAD visual blocks.
+        <visual>
+          <origin xyz="1.17413105 0.830189451 -0.655320351" rpy="-1.57079633 2.65360929e-06 -1.57079102" />
+          <geometry>
+            <mesh filename="package://amr_cad_description/meshes/Gear_Motor__1__Cut_Extrude7_1_.obj" scale="1 1 1" />
+          </geometry>
+          <material name="0.101961_0.101961_0.101961_0.000000_0.000000">
+            <color rgba="0.101961 0.101961 0.101961 1" />
+          </material>
+        </visual>
+        <visual>
+          <origin xyz="1.17413105 0.830189451 -0.655320351" rpy="-1.57079633 2.65360929e-06 -1.57079102" />
+          <geometry>
+            <mesh filename="package://amr_cad_description/meshes/Gear_Motor__1__Split1_2__1_.obj" scale="1 1 1" />
+          </geometry>
+          <material name="1.000000_0.949020_0.909804_0.000000_0.000000">
+            <texture />
+            <color rgba="1 0.94902 0.909804 1" />
+          </material>
+        </visual>
+        <visual>
+          <origin xyz="1.17413105 0.830189451 -0.655320351" rpy="-1.57079633 2.65360929e-06 -1.57079102" />
+          <geometry>
+            <mesh filename="package://amr_cad_description/meshes/Gear_Motor__1__Fillet5_1_.obj" scale="1 1 1" />
+          </geometry>
+          <material name="0.776471_0.756863_0.737255_0.000000_0.000000">
+            <texture />
+            <color rgba="0.776471 0.756863 0.737255 1" />
+          </material>
+        </visual>
+        <visual>
+          <origin xyz="1.1741351 -0.830180778 0.538370165" rpy="-1.57079633 7.34641021e-06 -1.57079633" />
+          <geometry>
+            <mesh filename="package://amr_cad_description/meshes/Gear_Motor__1__Split1_2__1_.obj" scale="1 1 1" />
+          </geometry>
+          <material name="1.000000_0.949020_0.909804_0.000000_0.000000">
+            <color rgba="1 0.94902 0.909804 1" />
+          </material>
+        </visual>
+        <visual>
+          <origin xyz="1.1741351 -0.830180778 0.538370165" rpy="-1.57079633 7.34641021e-06 -1.57079633" />
+          <geometry>
+            <mesh filename="package://amr_cad_description/meshes/Gear_Motor__1__Fillet5_1_.obj" scale="1 1 1" />
+          </geometry>
+          <material name="0.776471_0.756863_0.737255_0.000000_0.000000">
+            <texture />
+            <color rgba="0.776471 0.756863 0.737255 1" />
+          </material>
+        </visual>
+        <visual>
+          <origin xyz="1.1741351 -0.830180778 0.538370165" rpy="-1.57079633 7.34641021e-06 -1.57079633" />
+          <geometry>
+            <mesh filename="package://amr_cad_description/meshes/Gear_Motor__1__Cut_Extrude7_1_.obj" scale="1 1 1" />
+          </geometry>
+          <material name="0.101961_0.101961_0.101961_0.000000_0.000000">
+            <texture />
+            <color rgba="0.101961 0.101961 0.101961 1" />
+          </material>
+        </visual>
+    -->
     <visual>
       <origin xyz="0.00760011021 -0.058476 -1.39368818e-07" rpy="2.51540947 -1.57079179 0.62618318" />
       <geometry>
@@ -419,7 +421,7 @@
   <link name="right_caster_link">
     <xacro:sphere_inertial mass="0.05" radius="0.012" />
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin xyz="0 0 -0.0045" rpy="0 0 0" />
       <geometry>
         <sphere radius="0.012" />
       </geometry>
@@ -491,7 +493,7 @@
   <link name="left_caster_link">
     <xacro:sphere_inertial mass="0.05" radius="0.012" />
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin xyz="0 0 -0.0045" rpy="0 0 0" />
       <geometry>
         <sphere radius="0.012" />
       </geometry>
@@ -903,22 +905,24 @@
   <joint name="left_wheel_joint" type="continuous">
     <origin xyz="0 0.0875 0" rpy="0 -0 0" />
     <axis xyz="0 1 0" />
+    <dynamics damping="0.1" friction="0.03" />
     <parent link="base_link" />
     <child link="left_wheel_link" />
   </joint>
   <joint name="right_wheel_joint" type="continuous">
     <origin xyz="0 -0.0875 0" rpy="0 -0 0" />
     <axis xyz="0 1 0" />
+    <dynamics damping="0.1" friction="0.03" />
     <parent link="base_link" />
     <child link="right_wheel_link" />
   </joint>
   <joint name="base_link_to_right_caster" type="fixed">
-    <origin xyz="0.0852169927 -0.000901843 -0.0153911429" rpy="0 -0 0" />
+    <origin xyz="0.0852169927 -0.000901843 -0.0183911429" rpy="0 -0 0" />
     <parent link="base_link" />
     <child link="right_caster_link" />
   </joint>
   <joint name="base_link_to_left_caster" type="fixed">
-    <origin xyz="-0.0397830073 -0.000901843 -0.0153911429" rpy="0 -0 0" />
+    <origin xyz="-0.0397830073 -0.000901843 -0.0183911429" rpy="0 -0 0" />
     <parent link="base_link" />
     <child link="left_caster_link" />
   </joint>
@@ -937,4 +941,68 @@
     <parent link="base_link" />
     <child link="antenna_link" />
   </joint>
+
+  <!--
+    Gazebo contact tuning for the passive ball casters.
+
+    The drive wheels should grip the ground, but the caster balls should mostly
+    slide/roll freely. If Gazebo gives the caster contacts too much friction,
+    they can resist the differential-drive motion and make the robot pitch,
+    hop, or tumble while turning/moving.
+
+    mu1 and mu2 are the two contact friction coefficients used by Gazebo's
+    physics engine. Keeping them very small makes the caster contact slippery,
+    so the wheel motors remain the main source of horizontal force.
+  -->
+  <gazebo reference="left_caster_link">
+    <mu1>0.001</mu1>
+    <mu2>0.001</mu2>
+  </gazebo>
+
+  <gazebo reference="right_caster_link">
+    <mu1>0.001</mu1>
+    <mu2>0.001</mu2>
+  </gazebo>
+
+  <gazebo>
+    <plugin name="amr_diff_drive" filename="libgazebo_ros_diff_drive.so">
+      <ros>
+        <remapping>/tf:=tf</remapping>
+      </ros>
+
+      <update_rate>30</update_rate>
+
+      <left_joint>left_wheel_joint</left_joint>
+      <right_joint>right_wheel_joint</right_joint>
+
+      <wheel_separation>0.175</wheel_separation>
+      <wheel_diameter>0.065</wheel_diameter>
+
+      <max_wheel_torque>20</max_wheel_torque>
+      <max_wheel_acceleration>1.0</max_wheel_acceleration>
+
+      <command_topic>cmd_vel</command_topic>
+
+      <publish_odom>true</publish_odom>
+      <publish_odom_tf>true</publish_odom_tf>
+      <publish_wheel_tf>false</publish_wheel_tf>
+
+      <odometry_topic>odom</odometry_topic>
+      <odometry_frame>odom</odometry_frame>
+      <robot_base_frame>base_link</robot_base_frame>
+    </plugin>
+  </gazebo>
+
+  <gazebo>
+    <plugin name="amr_joint_state_publisher" filename="libgazebo_ros_joint_state_publisher.so">
+      <ros>
+        <remapping>~/out:=joint_states</remapping>
+      </ros>
+
+      <update_rate>30</update_rate>
+
+      <joint_name>left_wheel_joint</joint_name>
+      <joint_name>right_wheel_joint</joint_name>
+    </plugin>
+  </gazebo>
 </robot>
