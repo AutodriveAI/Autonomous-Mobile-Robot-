@@ -1,0 +1,52 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 30
+    use_sim_time: true 
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    diff_drive_controller:
+      type: diff_drive_controller/DiffDriveController
+
+diff_drive_controller:
+  ros__parameters:
+
+    publish_rate: 50.0
+
+    base_frame_id: base_link
+
+    left_wheel_names: ["left_wheel_joint"]
+    right_wheel_names: ["right_wheel_joint"]
+    wheel_separation: 0.175
+    wheel_radius: 0.0325
+
+    # teleop_twist_keyboard publishes geometry_msgs/Twist, not TwistStamped.
+    # With this false, diff_drive_controller listens on ~/cmd_vel_unstamped.
+    use_stamped_vel: false
+
+    # Simulated equivalent of the real STM32 command timeout.
+    # If no fresh velocity command arrives for 0.2 s, the controller stops.
+    cmd_vel_timeout: 0.2
+
+    odom_frame_id: odom
+    enable_odom_tf: true
+    open_loop: false
+
+    publish_limited_velocity: true
+
+    # Safety ceilings for Gazebo physics. These are simulation guardrails, not
+    # final real-robot performance limits.
+    linear.x.has_velocity_limits: true
+    linear.x.max_velocity: 0.6
+    linear.x.min_velocity: -0.6
+    linear.x.has_acceleration_limits: true
+    linear.x.max_acceleration: 0.25
+    linear.x.min_acceleration: -0.25
+
+    angular.z.has_velocity_limits: true
+    angular.z.max_velocity: 4.0
+    angular.z.min_velocity: -4.0
+    angular.z.has_acceleration_limits: true
+    angular.z.max_acceleration: 1.0
+    angular.z.min_acceleration: -1.0

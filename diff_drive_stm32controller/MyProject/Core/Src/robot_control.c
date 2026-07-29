@@ -8,7 +8,15 @@
 #include "motor.h"
 #include "wheel_pid.h"
 
-#define COMMAND_TIMEOUT_MS 300U // 300U
+/*
+ * Low-level STM32 command watchdog.
+ *
+ * For this diagnostic test, 0U disables the firmware-side timeout so we can
+ * check whether the periodic one-second wheel stop is caused by this layer.
+ *
+ * Restore to 300U after the test for normal safety behavior.
+ */
+#define COMMAND_TIMEOUT_MS 0U
 #define TELEMETRY_PERIOD_MS 50U
 #define PID_SET_TELEMETRY_PAUSE_MS 1000U
 #define PID_GET_TELEMETRY_PAUSE_MS 3000U
@@ -344,7 +352,8 @@ void RobotControl_Update(void)
 
   now_ms = HAL_GetTick();
 
-  if ((uint32_t)(now_ms - last_valid_command_ms) >= COMMAND_TIMEOUT_MS)
+  if ((COMMAND_TIMEOUT_MS > 0U) &&
+      ((uint32_t)(now_ms - last_valid_command_ms) >= COMMAND_TIMEOUT_MS))
   {
     if (control_mode != CONTROL_MODE_STOP)
     {

@@ -12,6 +12,8 @@
     standard ROS 2 keyboard teleop node. That node publishes geometry_msgs/Twist
     commands on /cmd_vel and owns all terminal keyboard handling.
   -->
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>rclpy</exec_depend>
   <exec_depend>teleop_twist_keyboard</exec_depend>
 
   <test_depend>ament_copyright</test_depend>

@@ -10,6 +10,25 @@ typedef struct
 static MotorChannelPair left_motor;
 static MotorChannelPair right_motor;
 
+/*
+ * Motor direction calibration.
+ *
+ * ROS and the firmware command convention are:
+ *   positive speed  = robot/wheel should move forward
+ *   negative speed  = robot/wheel should move backward
+ *
+ * The physical motor wiring currently produces the opposite motion: a positive
+ * command drives the robot backward.  Keep the wiring and CubeMX pin mapping
+ * unchanged, and fix that sign here in the motor output layer.
+ *
+ * If later only one side is wrong, change only that side's sign.
+ * Valid values:
+ *   +1 = keep command sign
+ *   -1 = invert command sign
+ */
+#define LEFT_MOTOR_DIRECTION_SIGN   (-1)
+#define RIGHT_MOTOR_DIRECTION_SIGN  (-1)
+
 static int Motor_ClampPwm(int speed)
 {
   if (speed > 999)
@@ -73,12 +92,12 @@ void Motor_Init(TIM_HandleTypeDef *left_timer, uint32_t left_forward_channel,
 
 void Motor_SetLeftSpeed(int speed)
 {
-  Motor_ApplySpeed(&left_motor, speed);
+  Motor_ApplySpeed(&left_motor, LEFT_MOTOR_DIRECTION_SIGN * speed);
 }
 
 void Motor_SetRightSpeed(int speed)
 {
-  Motor_ApplySpeed(&right_motor, speed);
+  Motor_ApplySpeed(&right_motor, RIGHT_MOTOR_DIRECTION_SIGN * speed);
 }
 
 void Motor_Stop(void)

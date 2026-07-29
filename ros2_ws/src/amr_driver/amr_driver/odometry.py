@@ -56,8 +56,12 @@ class DifferentialDriveOdometry:
                 if ticks_per_rev > 0:
                     self.left_wheel_angle += (
                         2.0 * math.pi * left_ticks_per_s * dt / ticks_per_rev)
-                    # The exported right joint uses the opposite axis.
-                    self.right_wheel_angle -= (
+                    # Encoder-positive means "wheel turning forward" for both
+                    # wheels in the current STM32 telemetry convention. Keep
+                    # the same sign for both joint positions so RViz wheel
+                    # animation matches the real robot: a forward command makes
+                    # both wheel links rotate forward visually.
+                    self.right_wheel_angle += (
                         2.0 * math.pi * right_ticks_per_s * dt / ticks_per_rev)
         self._last_stamp = stamp
         return OdometryUpdate(linear, angular)

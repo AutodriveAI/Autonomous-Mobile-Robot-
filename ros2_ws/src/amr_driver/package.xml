@@ -4,13 +4,20 @@
   <name>amr_driver</name>
   <version>0.1.0</version>
   <description>
-    ROS 2 bridge between the Jetson Nano and the STM32 differential-drive
-    motor controller. Converts /cmd_vel into the firmware's UART command
-    protocol and republishes encoder telemetry as /odom and TF.
+    AMR driver package for the STM32 differential-drive motor controller.
+    Contains the current Python serial bridge and the C++ ros2_control hardware
+    interface plugin.
   </description>
   <maintainer email="you@example.com">Nilkontha Das</maintainer>
   <license>MIT</license>
 
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>ament_cmake_python</depend>
+  <depend>hardware_interface</depend>
+  <depend>pluginlib</depend>
+  <depend>rclcpp</depend>
+  <depend>rclcpp_lifecycle</depend>
   <depend>rclpy</depend>
   <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
@@ -24,6 +31,6 @@
   <test_depend>python3-pytest</test_depend>
 
   <export>
-    <build_type>ament_python</build_type>
+    <build_type>ament_cmake</build_type>
   </export>
 </package>

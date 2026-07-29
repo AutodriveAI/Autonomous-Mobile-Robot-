@@ -1,0 +1,292 @@
+<?xml version='1.0' encoding='utf-8'?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!--
+    RPLidar A1 description.
+
+    This file owns the lidar frame and its visual CAD meshes. Keeping it
+    separate makes lidar frame calibration and future Gazebo laser plugin work
+    easier without touching the main chassis model.
+  -->
+
+  <xacro:macro name="amr_lidar">
+  <link name="lidar_link">
+    <xacro:box_inertial mass="0.17" x="0.075" y="0.075" z="0.04" />
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08500004" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_base_igs_STEP_1_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="0.250980_0.250980_0.250980_0.000000_0.000000">
+        <color rgba="0.25098 0.25098 0.25098 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08500004" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_bottom_lid_igs_STEP_1_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="0.486275_0.486275_0.486275_0.000000_0.000000">
+        <color rgba="0.486275 0.486275 0.486275 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08500004" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_connector_1_25_3pin_igs_STEP_1_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="1.000000_1.000000_1.000000_0.000000_0.000000">
+        <color rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08500004" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_connector_1_25_4pin_igs_STEP_1_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="1.000000_1.000000_1.000000_0.000000_0.000000">
+        <color rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08500004" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_connector_7pin_2_5_igs_STEP_1_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="0.792157_0.819608_0.933333_0.000000_0.000000">
+        <color rgba="0.792157 0.819608 0.933333 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08500004" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_detector_igs_STEP_1_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="0.792157_0.819608_0.933333_0.000000_0.000000">
+        <color rgba="0.792157 0.819608 0.933333 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08500004" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_detector_mount_igs_STEP_1_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="0.486275_0.486275_0.486275_0.000000_0.000000">
+        <color rgba="0.486275 0.486275 0.486275 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08500004" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_devboard_igs_STEP_1_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="0.745098_0.745098_0.745098_0.000000_0.000000">
+        <color rgba="0.745098 0.745098 0.745098 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08500004" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_head_base_igs_STEP_1_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="0.250980_0.250980_0.250980_0.000000_0.000000">
+        <color rgba="0.25098 0.25098 0.25098 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08500004" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_head_igs_STEP_1_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="0.439216_0.439216_0.439216_0.000000_0.000000">
+        <color rgba="0.439216 0.439216 0.439216 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08499984" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_laser_igs_STEP_1_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="0.905882_0.443137_0.027451_0.000000_0.000000">
+        <color rgba="0.905882 0.443137 0.027451 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08499984" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_laser_mount_igs_STEP_1_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="0.486275_0.486275_0.486275_0.000000_0.000000">
+        <color rgba="0.486275 0.486275 0.486275 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08500004" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_motherboard_igs_STEP_1_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="0.047059_0.615686_0.047059_0.000000_0.000000">
+        <color rgba="0.0470588 0.615686 0.0470588 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08500004" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_motor_board_igs_STEP_1_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="0.000000_0.000000_0.000000_0.000000_0.000000">
+        <color rgba="0 0 0 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08499984" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_motor_igs_STEP_1_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="1.000000_1.000000_1.000000_0.000000_0.000000">
+        <color rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08500004" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_rubber_igs_STEP_1_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="0.486275_0.486275_0.486275_0.000000_0.000000">
+        <color rgba="0.486275 0.486275 0.486275 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08500004" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_stand_15x2_igs_STEP_1_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="1.000000_1.000000_1.000000_0.000000_0.000000">
+        <color rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08500004" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_stand_15x2_igs_STEP_2_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="1.000000_1.000000_1.000000_0.000000_0.000000">
+        <color rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08500004" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_stand_15x2_igs_STEP_3_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="1.000000_1.000000_1.000000_0.000000_0.000000">
+        <color rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08500004" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_stand_15x2_igs_STEP_4_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="1.000000_1.000000_1.000000_0.000000_0.000000">
+        <color rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08499984" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_stand_8x2_igs_STEP_1_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="1.000000_1.000000_1.000000_0.000000_0.000000">
+        <color rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08499984" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_stand_8x2_igs_STEP_2_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="1.000000_1.000000_1.000000_0.000000_0.000000">
+        <color rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08499984" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_stand_8x2_igs_STEP_3_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="1.000000_1.000000_1.000000_0.000000_0.000000">
+        <color rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08500004" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_stand_8x2_igs_STEP_4_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="1.000000_1.000000_1.000000_0.000000_0.000000">
+        <color rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08500004" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_wheel_igs_STEP_1_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="0.250980_0.250980_0.250980_0.000000_0.000000">
+        <color rgba="0.25098 0.25098 0.25098 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08500004" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_Woodscrews_GB_TYPE136_M2X6_N_igs_STEP_1_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="0.772549_0.752941_0.733333_0.000000_0.000000">
+        <color rgba="0.772549 0.752941 0.733333 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08500004" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_Woodscrews_GB_TYPE136_M2X6_N_igs_STEP_2_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="0.772549_0.752941_0.733333_0.000000_0.000000">
+        <color rgba="0.772549 0.752941 0.733333 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08500004" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_Woodscrews_GB_TYPE136_M2X6_N_igs_STEP_3_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="0.772549_0.752941_0.733333_0.000000_0.000000">
+        <color rgba="0.772549 0.752941 0.733333 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08500004" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_Woodscrews_GB_TYPE136_M2X6_N_igs_STEP_4_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="0.772549_0.752941_0.733333_0.000000_0.000000">
+        <color rgba="0.772549 0.752941 0.733333 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0.03 -0.1 -0.08500004" rpy="1.57079633 4.8965888e-12 -3.14158898" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/Default__12_STEP_1_RP_lidar_A1_igs_STEP_1_Woodscrews_GB_TYPE136_M2X6_N_igs_STEP_5_solid1.obj" scale="1 1 1" />
+      </geometry>
+      <material name="0.772549_0.752941_0.733333_0.000000_0.000000">
+        <color rgba="0.772549 0.752941 0.733333 1" />
+      </material>
+    </visual>
+  </link>
+
+  <joint name="base_link_to_lidar" type="fixed">
+    <origin xyz="0.0126386 0.0002054 0.17618784" rpy="0 -0 0" />
+    <parent link="base_link" />
+    <child link="lidar_link" />
+  </joint>
+  </xacro:macro>
+</robot>

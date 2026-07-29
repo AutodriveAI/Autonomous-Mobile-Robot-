@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='utf-8'?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!--
+    IMU description.
+
+    This file owns the IMU frame and visual mesh. The IMU link still uses the
+    shared box_inertial macro defined by robot_core.xacro.
+  -->
+
+  <xacro:macro name="amr_imu">
+  <link name="imu_link">
+    <xacro:box_inertial mass="0.02" x="0.025" y="0.020" z="0.006" />
+    <visual>
+      <origin xyz="0.0075000367 -2.65360071e-08 -0.0050000826" rpy="3.67321e-06 -2.65358979e-06 -1.57079633" />
+      <geometry>
+        <mesh filename="package://amr_description/meshes/IMU.obj" scale="1 1 1" />
+      </geometry>
+      <material name="0.615686_0.811765_0.929412_0.000000_0.000000">
+        <color rgba="0.615686 0.811765 0.929412 1" />
+      </material>
+    </visual>
+  </link>
+
+  <joint name="base_link_to_imu" type="fixed">
+    <origin xyz="0.0305993 -1.84695904e-13 0.11675" rpy="0 -0 0" />
+    <parent link="base_link" />
+    <child link="imu_link" />
+  </joint>
+  </xacro:macro>
+</robot>

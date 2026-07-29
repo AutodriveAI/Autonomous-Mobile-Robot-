@@ -1,0 +1,10 @@
+<library path="amr_driver_stm32_hardware">
+  <class
+    name="amr_driver/STM32SystemHardware"
+    type="amr_driver::STM32SystemHardware"
+    base_class_type="hardware_interface::SystemInterface">
+    <description>
+      ros2_control hardware interface for the AMR STM32 serial motor controller.
+    </description>
+  </class>
+</library>

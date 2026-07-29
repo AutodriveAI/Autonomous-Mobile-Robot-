@@ -11,7 +11,10 @@ amr_driver_node:
     publish_tf: true
 
     publish_rate_hz: 20.0
-    cmd_vel_timeout_s: 0.5
+    # Stop sooner after teleop/navigation stops publishing fresh velocity.
+    # This keeps the real robot from coasting under the last command after a
+    # key release or a stalled command publisher.
+    cmd_vel_timeout_s: 0.2
 
     # TODO: measure these on your actual robot -- everything else in this
     # node (cmd_vel scaling, odometry) is wrong until these are correct.

@@ -54,7 +54,7 @@ cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
 source /opt/ros/humble/setup.bash
 source install/setup.bash
 ros2 run amr_teleop keyboard_teleop --ros-args \
-  -p speed:=0.3 -p turn:=0.8
+  -p speed:=0.25 -p turn:=2.27
 ```
 
 The command above is an alias for:
@@ -64,7 +64,17 @@ cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
 source /opt/ros/humble/setup.bash
 source install/setup.bash
 ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args \
-  -p speed:=0.3 -p turn:=0.8
+  -p speed:=0.25 -p turn:=2.27
+```
+
+The `amr_teleop keyboard_teleop` wrapper uses these AMR defaults automatically,
+so this shorter command is equivalent:
+
+```bash
+cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+ros2 run amr_teleop keyboard_teleop
 ```
 
 ## Standard controls
@@ -111,7 +121,7 @@ cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
 source /opt/ros/humble/setup.bash
 source install/setup.bash
 ros2 run amr_teleop keyboard_teleop --ros-args \
-  -p speed:=0.3 -p turn:=0.8
+  -p speed:=0.25 -p turn:=2.27
 ```
 
 For the first physical test, lift the drive wheels off the ground and keep

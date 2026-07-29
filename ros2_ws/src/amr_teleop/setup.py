@@ -19,9 +19,11 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            # Keep the project-specific command name, but run the standard ROS 2
-            # teleop_twist_keyboard implementation instead of custom key handling.
-            'keyboard_teleop = teleop_twist_keyboard:main',
+            # Keep the project-specific command name and use the standard ROS 2
+            # teleop implementation, but inject AMR-specific default speed/turn
+            # parameters before handing control to teleop_twist_keyboard.
+            'keyboard_teleop = amr_teleop.keyboard_teleop:main',
+            'cmd_vel_timeout = amr_teleop.cmd_vel_timeout:main',
         ],
     },
 )

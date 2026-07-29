@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<robot name="amr" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:include filename="robot_core.xacro" />
+  <xacro:include filename="lidar.xacro" />
+  <xacro:include filename="imu.xacro" />
+  <xacro:include filename="gazebo.xacro" />
+
+
+  <xacro:amr_robot_core />
+  <xacro:amr_lidar />
+  <xacro:amr_imu />
+  <xacro:amr_gazebo_plugins />
+
+</robot>

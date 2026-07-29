@@ -1,0 +1,151 @@
+<?xml version='1.0' encoding='utf-8'?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  
+    <!-- Gazebo-specific settings for the AMR.
+
+    Keep these separate from robot.urdf.xacro so the main robot description stays
+    focused on physical structure: links, joints, visuals, collisions, and
+    inertial properties.
+
+    This file contains Gazebo-only simulation details:
+      - contact/friction tuning,
+      - simulated RPLidar A1 laser scans,
+      - the classic Gazebo differential-drive plugin,
+      - simulated wheel joint-state publication.
+   -->
+
+  <xacro:macro name="amr_gazebo_plugins">
+    <!--
+      Passive caster contact tuning.
+
+      The drive wheels need ground grip, but the ball casters should mostly
+      slide/roll freely. If Gazebo gives the caster contacts too much friction,
+      the casters can fight the drive wheels and make the robot pitch, hop, or
+      tumble during slow movement or turns.
+
+      mu1 and mu2 are Gazebo's two contact friction coefficients. Very small
+      values make the caster contacts slippery while leaving drive-wheel
+      traction untouched.
+    -->
+    <gazebo reference="left_caster_link">
+      <mu1>0.001</mu1>
+      <mu2>0.001</mu2>
+    </gazebo>
+
+    <gazebo reference="right_caster_link">
+      <mu1>0.001</mu1>
+      <mu2>0.001</mu2>
+    </gazebo>
+
+    <!--
+      Drive wheel contact tuning.
+
+      Unlike the passive casters, the two drive wheels should grip the floor.
+      Higher wheel friction makes Gazebo less "ice-like" and helps the robot
+      behave closer to the physical base during acceleration and turning.
+    -->
+    <gazebo reference="left_wheel_link">
+      <mu1>2.0</mu1>
+      <mu2>2.0</mu2>
+    </gazebo>
+
+    <gazebo reference="right_wheel_link">
+      <mu1>2.0</mu1>
+      <mu2>2.0</mu2>
+    </gazebo>
+
+    <!--
+      Simulated RPLidar A1.
+
+      RPLidar A1 is a 2D 360-degree lidar. These values are intentionally close
+      to the real sensor rather than perfect:
+
+        scan angle       : 360 degrees
+        scan rate        : about 5.5 Hz
+        useful range     : about 0.15 m to 12 m
+        published topic  : /scan
+        frame            : lidar_link
+
+      visualize=true shows the laser rays in Gazebo, which is useful while
+      checking sensor placement and obstacle detection.
+    -->
+    <gazebo reference="lidar_link">
+      <sensor name="rplidar_a1" type="ray">
+        <always_on>true</always_on>
+        <visualize>true</visualize>
+        <update_rate>5.5</update_rate>
+
+        <ray>
+          <scan>
+            <horizontal>
+              <samples>360</samples>
+              <resolution>1</resolution>
+              <min_angle>-3.14159265359</min_angle>
+              <max_angle>3.14159265359</max_angle>
+            </horizontal>
+          </scan>
+          <range>
+            <min>0.15</min>
+            <max>12.0</max>
+            <resolution>0.01</resolution>
+          </range>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.01</stddev>
+          </noise>
+        </ray>
+
+        <plugin name="rplidar_a1_controller" filename="libgazebo_ros_ray_sensor.so">
+          <ros>
+            <remapping>~/out:=scan</remapping>
+          </ros>
+          <output_type>sensor_msgs/LaserScan</output_type>
+          <frame_name>lidar_link</frame_name>
+        </plugin>
+      </sensor>
+    </gazebo>
+
+    <!--
+      Classic Gazebo differential-drive actuator.
+
+      This is the simpler, more stable simulation path for now:
+
+        /cmd_vel
+          -> libgazebo_ros_diff_drive.so
+          -> left_wheel_joint / right_wheel_joint
+
+      It is separate from the real robot path. The real vehicle still uses
+      amr_driver + STM32 serial communication.
+    -->
+    <gazebo>
+      <plugin name="amr_diff_drive" filename="libgazebo_ros_diff_drive.so">
+        <update_rate>50</update_rate>
+
+        <left_joint>left_wheel_joint</left_joint>
+        <right_joint>right_wheel_joint</right_joint>
+
+        <wheel_separation>0.175</wheel_separation>
+        <wheel_diameter>0.065</wheel_diameter>
+
+        <max_wheel_torque>2.0</max_wheel_torque>
+        <max_wheel_acceleration>1.0</max_wheel_acceleration>
+
+        <command_topic>cmd_vel</command_topic>
+        <odometry_topic>odom</odometry_topic>
+        <odometry_frame>odom</odometry_frame>
+        <robot_base_frame>base_link</robot_base_frame>
+
+        <publish_odom>true</publish_odom>
+        <publish_odom_tf>true</publish_odom_tf>
+        <publish_wheel_tf>false</publish_wheel_tf>
+      </plugin>
+
+      <plugin name="amr_joint_state_publisher" filename="libgazebo_ros_joint_state_publisher.so">
+        <update_rate>50</update_rate>
+        <joint_name>left_wheel_joint</joint_name>
+        <joint_name>right_wheel_joint</joint_name>
+      </plugin>
+    </gazebo>
+  </xacro:macro>
+</robot>
