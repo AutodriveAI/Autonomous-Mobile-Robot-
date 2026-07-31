@@ -1,24 +1,24 @@
-"""Unit test for the telemetry regex against a real line format from
-robot_control.c's RobotControl_SendTelemetry(). No serial port required."""
+"""Unit tests for STM32 telemetry regexes. No serial port required."""
 
-from amr_driver.stm32_transport import _TELEMETRY_RE
+from amr_driver.stm32_transport import _OLD_TELEMETRY_RE, _TELEMETRY_RE
 
 
 def test_parses_real_firmware_telemetry_line():
+    line = 'E,12345,1024,-1030'
+    match = _TELEMETRY_RE.search(line)
+    assert match is not None
+    time_ms, left_ticks, right_ticks = (int(g) for g in match.groups())
+    assert time_ms == 12345
+    assert left_ticks == 1024
+    assert right_ticks == -1030
+
+
+def test_detects_old_verbose_telemetry_line():
     line = (
         'LTicks:1024        LPWM:512      LCTPS:180      '
         'RTicks:1030        RPWM:-200     RCTPS:-60     '
     )
-    match = _TELEMETRY_RE.search(line)
-    assert match is not None
-    l_ticks, l_pwm, l_ctps, r_ticks, r_pwm, r_ctps = (
-        int(g) for g in match.groups())
-    assert l_ticks == 1024
-    assert l_pwm == 512
-    assert l_ctps == 180
-    assert r_ticks == 1030
-    assert r_pwm == -200
-    assert r_ctps == -60
+    assert _OLD_TELEMETRY_RE.search(line) is not None
 
 
 def test_ignores_non_telemetry_lines():

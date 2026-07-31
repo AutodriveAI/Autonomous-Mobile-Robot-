@@ -21,9 +21,9 @@ amr_driver_node:
     wheel_radius_m: 0.0325      # e.g. 65 mm diameter wheel -> 0.0325 m radius
     wheel_separation_m: 0.175   # measured center-to-center distance between both wheels
 
-    # From MyProject/Core/Src firmware comments/constants -- change only if
-    # you also change the firmware.
-    ticks_per_revolution: 100
-    # Lifted-wheel testing at about 7.8 V showed roughly 300 ticks/s as the
-    # practical safe maximum. Keep ROS commands inside that measured limit.
-    max_ticks_per_second: 300.0
+    # HC-020K single-channel encoder with a 20-slit disk on the wheel axle:
+    # one debounced rising edge per slit gives about 20 ticks/wheel revolution.
+    ticks_per_revolution: 20
+    # The old 100-tick encoder setup reached roughly 300 ticks/s, i.e. about
+    # 3 wheel rev/s. With 20 ticks/rev, the equivalent limit is about 60 ticks/s.
+    max_ticks_per_second: 60.0

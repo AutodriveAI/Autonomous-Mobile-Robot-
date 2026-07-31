@@ -30,6 +30,7 @@ base_link
 ├── left_caster_link
 ├── right_caster_link
 ├── lidar_link
+│   └── lidar_scan_link
 ├── imu_link
 └── antenna_link
 ```
@@ -51,6 +52,8 @@ The active Xacro model uses a deliberately simple physics approximation:
 - `left_caster_link` / `right_caster_link`: one sphere collision per caster.
 - `antenna_link`: two cylinder collisions, one for each antenna.
 - `lidar_link` and `imu_link`: inertial properties only for now, no collision.
+- `lidar_scan_link`: massless scan frame rotated to align RPLidar scan angles
+  with the robot front while leaving the visual LiDAR mesh unchanged.
 
 The detailed CAD meshes are only used for `<visual>`. They are not used for
 `<collision>`, because detailed CAD collision is computationally heavier and can

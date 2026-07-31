@@ -8,15 +8,14 @@ Responsibilities
 2. Enforce a Jetson-side watchdog (`cmd_vel_timeout_s`) independent of the
    firmware's own 20 s command timeout -- this one is meant to actually be
    tight enough to matter if the driving process dies or the topic stalls.
-3. Parse telemetry lines from the firmware and republish them as
+3. Parse signed total encoder ticks from the firmware and republish them as
    nav_msgs/Odometry (+ TF) and sensor_msgs/JointState.
 
-Firmware quirk this node relies on: LCTPS/RCTPS ("measured ticks per
-second") already carry a direction sign, because robot_control.c derives
-that sign from the *target* direction it was given (see wheel_pid.c,
-WheelSpeedController_Update). The raw LTicks/RTicks counters do not have a
-direction sign (single-channel capture). So position is integrated here from
-the signed ticks/s values over locally-measured dt, not from raw tick deltas.
+The STM32 currently has single-channel encoders, so it signs each new tick
+using the active wheel command direction. ROS receives signed total tick
+positions and calculates deltas between samples; this gives correct wheel
+joint positions for RViz and more stable odometry than integrating rounded
+ticks/s telemetry.
 """
 
 import rclpy
@@ -66,13 +65,6 @@ class AmrDriverNode(Node):
             p['wheel_radius_m'], p['wheel_separation_m'], p['ticks_per_revolution'])
         self._odometry = DifferentialDriveOdometry(self._kinematics)
 
-        self._transport = Stm32Transport(
-            port=p['serial_port'],
-            baud=p['baud_rate'],
-            on_telemetry=self._on_telemetry,
-            on_reply=self._on_reply,
-        )
-
         # Wheel feedback is frequent and becomes obsolete quickly. BEST_EFFORT
         # avoids retransmitting stale odometry if a message is missed.
         best_effort_qos = QoSProfile(
@@ -91,6 +83,16 @@ class AmrDriverNode(Node):
             JointState, 'joint_states', best_effort_qos)
         self._tf_broadcaster = (
             TransformBroadcaster(self) if p['publish_tf'] else None)
+
+        # Open serial only after all publishers/subscribers used by telemetry
+        # callbacks exist. Stm32Transport starts a background reader thread
+        # immediately, and the STM32 may send telemetry before __init__ returns.
+        self._transport = Stm32Transport(
+            port=p['serial_port'],
+            baud=p['baud_rate'],
+            on_telemetry=self._on_telemetry,
+            on_reply=self._on_reply,
+        )
 
         # This timer continually refreshes the STM32's command watchdog.
         period_s = 1.0 / p['publish_rate_hz']
@@ -116,10 +118,11 @@ class AmrDriverNode(Node):
         # TODO: replace with your robot's real measured values.
         self.declare_parameter('wheel_radius_m', 0.0)
         self.declare_parameter('wheel_separation_m', 0.0)
-        # From the present hardware test: 100 ticks/rev, about 300 ticks/s
-        # practical safe lifted-wheel maximum at roughly 7.8 V.
-        self.declare_parameter('ticks_per_revolution', 100)
-        self.declare_parameter('max_ticks_per_second', 300.0)
+        # HC-020K single-channel encoder with a 20-slit disk. The old
+        # 100-tick setup reached about 300 ticks/s, i.e. roughly 3 rev/s.
+        # With 20 ticks/rev, the equivalent physical limit is about 60 ticks/s.
+        self.declare_parameter('ticks_per_revolution', 20)
+        self.declare_parameter('max_ticks_per_second', 60.0)
 
     def _read_parameters(self) -> dict:
         """Copy ROS parameter values into one convenient immutable-by-convention dict."""
@@ -159,7 +162,7 @@ class AmrDriverNode(Node):
         right_ticks = max(-limit, min(limit, right_ticks))
 
         # Firmware protocol carries integers. int() truncates fractional
-        # ticks/s, which is acceptable at the current 100 ticks/revolution.
+        # ticks/s, which is acceptable at the current 20 ticks/revolution.
         self._target_left_ticks = int(left_ticks)
         self._target_right_ticks = int(right_ticks)
         self._last_cmd_vel_time = self.get_clock().now()
@@ -206,7 +209,8 @@ class AmrDriverNode(Node):
         # rclpy Publisher.publish() and TransformBroadcaster.sendTransform()
         # are safe to call directly from another thread.
         state = self._odometry.update(
-            telemetry.left_ticks_per_s, telemetry.right_ticks_per_s, telemetry.stamp)
+            telemetry.left_ticks, telemetry.right_ticks,
+            telemetry.time_ms, telemetry.stamp)
         self._publish_odometry(state.linear_velocity, state.angular_velocity)
         self._publish_joint_states()
 
@@ -248,6 +252,10 @@ class AmrDriverNode(Node):
         # matching joints to animate in RViz.
         msg.name = [self._odometry.left_wheel_joint, self._odometry.right_wheel_joint]
         msg.position = [self._odometry.left_wheel_angle, self._odometry.right_wheel_angle]
+        msg.velocity = [
+            self._odometry.left_wheel_velocity,
+            self._odometry.right_wheel_velocity,
+        ]
         self._joint_state_pub.publish(msg)
 
     # -- lifecycle --------------------------------------------------------

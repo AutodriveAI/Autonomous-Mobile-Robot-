@@ -10,7 +10,6 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    teleop = LaunchConfiguration('teleop')
     use_rviz = LaunchConfiguration('use_rviz')
     use_lidar = LaunchConfiguration('use_lidar')
     config_file = LaunchConfiguration('config_file')
@@ -31,16 +30,15 @@ def generate_launch_description():
         }.items(),
     )
 
-    rviz_launch = IncludeLaunchDescription(
+    description_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(amr_description_share, 'launch', 'display.launch.py')
         ),
         launch_arguments={
             'use_gui': 'false',
-            'use_rviz': 'true',
+            'use_rviz': use_rviz,
             'use_joint_state_publisher': 'false',
         }.items(),
-        condition=IfCondition(use_rviz),
     )
 
     lidar_launch = IncludeLaunchDescription(
@@ -55,19 +53,14 @@ def generate_launch_description():
         condition=IfCondition(use_lidar),
     )
 
-    keyboard_teleop = Node(
-        package='amr_teleop',
-        executable='keyboard_teleop',
-        name='keyboard_teleop',
-        output='screen',
-        condition=IfCondition(teleop),
-    )
-
     return LaunchDescription([
         DeclareLaunchArgument(
             'teleop',
             default_value='false',
-            description='Start keyboard teleop. The STM32 firmware already has command timeout.',
+            description=(
+                'Deprecated/no-op. Run keyboard teleop in a separate terminal '
+                'because teleop_twist_keyboard needs an interactive terminal.'
+            ),
         ),
         DeclareLaunchArgument(
             'use_rviz',
@@ -91,7 +84,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             'lidar_frame_id',
-            default_value='lidar_link',
+            default_value='lidar_scan_link',
             description='TF frame used by physical LaserScan messages.',
         ),
         DeclareLaunchArgument(
@@ -101,6 +94,5 @@ def generate_launch_description():
         ),
         driver_launch,
         lidar_launch,
-        rviz_launch,
-        keyboard_teleop,
+        description_launch,
     ])

@@ -27,20 +27,33 @@
 
 /*
  * Safety limit for V commands, in encoder ticks per second.
- * With 100 ticks/wheel revolution, 1000 ticks/s equals 10 wheel revolutions/s.
+ * With the current 20-slit single-channel encoder, 60 ticks/s is about
+ * 3 wheel revolutions/s. That matches the earlier lifted-wheel safe-speed
+ * estimate without accidentally commanding 5x more physical wheel speed.
  */
-#define WHEEL_PID_MAX_TARGET_TICKS_PER_SECOND 1000.0f
+#define WHEEL_PID_MAX_TARGET_TICKS_PER_SECOND 60.0f
 
-/*
- * The three adjustable PID gains.  They are shared by the left and right
- * wheel controllers for now, which makes initial tuning much simpler.
- */
+/* The three adjustable PID gains for one wheel controller. */
 typedef struct
 {
   float kp;
   float ki;
   float kd;
 } WheelPidGains;
+
+/*
+ * Separate gain sets for the two physical wheels.
+ *
+ * The left and right control loops already had independent history
+ * (integral, previous error, measured speed, PWM output).  This pair now lets
+ * each loop also have its own tuning personality, which matters when two
+ * motors or gearboxes behave differently under load.
+ */
+typedef struct
+{
+  WheelPidGains left;
+  WheelPidGains right;
+} WheelPidGainSet;
 
 /*
  * All state needed to control both wheels.
@@ -133,8 +146,10 @@ float WheelSpeedController_GetRightMeasuredTicksPerSecond(
  * it must be called explicitly, not after every tuning command.
  */
 void WheelPid_LoadSavedGains(void);
-bool WheelPid_SetGains(float kp, float ki, float kd);
-void WheelPid_GetGains(WheelPidGains *gains);
+bool WheelPid_SetBothGains(float kp, float ki, float kd);
+bool WheelPid_SetLeftGains(float kp, float ki, float kd);
+bool WheelPid_SetRightGains(float kp, float ki, float kd);
+void WheelPid_GetGains(WheelPidGainSet *gains);
 bool WheelPid_SaveGains(void);
 
 #endif /* WHEEL_PID_H */

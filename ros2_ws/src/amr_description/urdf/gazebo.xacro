@@ -66,13 +66,14 @@
         published topic  : /scan
         frame            : lidar_link
 
-      visualize=true shows the laser rays in Gazebo, which is useful while
-      checking sensor placement and obstacle detection.
+      visualize=false keeps Gazebo from drawing all laser rays in the 3D scene.
+      The sensor still publishes /scan; only the blue/yellow ray debug overlay
+      is hidden.
     -->
     <gazebo reference="lidar_link">
       <sensor name="rplidar_a1" type="ray">
         <always_on>true</always_on>
-        <visualize>true</visualize>
+        <visualize>false</visualize>
         <update_rate>5.5</update_rate>
 
         <ray>
@@ -101,7 +102,7 @@
             <remapping>~/out:=scan</remapping>
           </ros>
           <output_type>sensor_msgs/LaserScan</output_type>
-          <frame_name>lidar_link</frame_name>
+          <frame_name>lidar_scan_link</frame_name>
         </plugin>
       </sensor>
     </gazebo>

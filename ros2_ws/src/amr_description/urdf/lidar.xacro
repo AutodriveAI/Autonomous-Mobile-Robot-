@@ -284,9 +284,24 @@
   </link>
 
   <joint name="base_link_to_lidar" type="fixed">
-    <origin xyz="0.0126386 0.0002054 0.17618784" rpy="0 -0 0" />
+    <origin xyz="0.0126386 0.0002054 0.17618784" rpy="0 0 0" />
     <parent link="base_link" />
     <child link="lidar_link" />
+  </joint>
+
+  <!--
+    Scan frame calibration.
+
+    Keep lidar_link as the physical/visual LiDAR body so the CAD mesh stays in
+    the mounted orientation.  The RPLidar scan zero/front direction is 180
+    degrees from the robot's +X/front direction, so LaserScan messages should
+    use this rotated child frame instead.
+  -->
+  <link name="lidar_scan_link" />
+  <joint name="lidar_link_to_lidar_scan" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 3.14159265" />
+    <parent link="lidar_link" />
+    <child link="lidar_scan_link" />
   </joint>
   </xacro:macro>
 </robot>

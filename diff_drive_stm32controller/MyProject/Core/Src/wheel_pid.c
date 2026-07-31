@@ -20,11 +20,11 @@
 
 /* STM32F401 sector 7 is 128 KiB at the end of its 512 KiB internal Flash. */
 #define WHEEL_PID_FLASH_ADDRESS 0x08060000U
-#define WHEEL_PID_FLASH_MAGIC 0x50494431U  /* ASCII-like identifier: "PID1". */
-#define WHEEL_PID_FLASH_VERSION 1U
+#define WHEEL_PID_FLASH_MAGIC 0x50494432U  /* ASCII-like identifier: "PID2". */
+#define WHEEL_PID_FLASH_VERSION 2U
 
 /*
- * Six 32-bit words are programmed at the start of the reserved sector.
+ * Nine 32-bit words are programmed at the start of the reserved sector.
  * Storing each float as its raw bits avoids text parsing and keeps the record
  * compact.  The checksum makes partially written or unrelated Flash invalid.
  */
@@ -32,17 +32,19 @@ typedef struct
 {
   uint32_t magic;
   uint32_t version;
-  uint32_t kp_bits;
-  uint32_t ki_bits;
-  uint32_t kd_bits;
+  uint32_t left_kp_bits;
+  uint32_t left_ki_bits;
+  uint32_t left_kd_bits;
+  uint32_t right_kp_bits;
+  uint32_t right_ki_bits;
+  uint32_t right_kd_bits;
   uint32_t checksum;
 } WheelPidFlashRecord;
 
-static WheelPidGains wheel_pid_gains =
+static WheelPidGainSet wheel_pid_gains =
 {
-  WHEEL_PID_DEFAULT_KP,
-  WHEEL_PID_DEFAULT_KI,
-  WHEEL_PID_DEFAULT_KD
+  { WHEEL_PID_DEFAULT_KP, WHEEL_PID_DEFAULT_KI, WHEEL_PID_DEFAULT_KD },
+  { WHEEL_PID_DEFAULT_KP, WHEEL_PID_DEFAULT_KI, WHEEL_PID_DEFAULT_KD }
 };
 
 static uint32_t WheelPid_FloatToBits(float value)
@@ -63,8 +65,10 @@ static float WheelPid_BitsToFloat(uint32_t bits)
 
 static uint32_t WheelPid_RecordChecksum(const WheelPidFlashRecord *record)
 {
-  return record->magic ^ record->version ^ record->kp_bits ^ record->ki_bits ^
-      record->kd_bits ^ 0xA5A55A5AU;
+  return record->magic ^ record->version ^
+      record->left_kp_bits ^ record->left_ki_bits ^ record->left_kd_bits ^
+      record->right_kp_bits ^ record->right_ki_bits ^ record->right_kd_bits ^
+      0xA5A55A5AU;
 }
 
 /* A value which is not equal to itself is NaN, so no math-library call is needed. */
@@ -116,8 +120,9 @@ static void WheelPid_ResetHistory(WheelSpeedController *controller,
  * PWM = Kp * error + Ki * integral(error) + Kd * derivative(error)
  * Pointers allow each wheel's integral and previous error to persist between calls.
  */
-static int WheelPid_RunOne(float target, float measured, float *integral,
-    float *previous_error, float elapsed_seconds)
+static int WheelPid_RunOne(const WheelPidGains *gains, float target,
+    float measured, float *integral, float *previous_error,
+    float elapsed_seconds)
 {
   float error;       /* Desired speed minus measured speed, in ticks/s. */
   float derivative;  /* Change in error per second. */
@@ -150,9 +155,9 @@ static int WheelPid_RunOne(float target, float measured, float *integral,
   *previous_error = error;  /* Save this reading for the next update. */
 
   /* Combine proportional, integral, and derivative contributions. */
-  output = (wheel_pid_gains.kp * error) +
-      (wheel_pid_gains.ki * *integral) +
-      (wheel_pid_gains.kd * derivative);
+  output = (gains->kp * error) +
+      (gains->ki * *integral) +
+      (gains->kd * derivative);
 
   /*
    * A speed controller must not reverse a wheel merely because one sampled
@@ -287,11 +292,13 @@ bool WheelSpeedController_Update(WheelSpeedController *controller,
   controller->right_measured_ticks_per_second = right_measured;
 
   /* Save the new PWM values; RobotControl applies them to the motor module. */
-  controller->left_pwm = WheelPid_RunOne(controller->left_target_ticks_per_second,
-      left_measured, &controller->left_integral, &controller->left_previous_error,
+  controller->left_pwm = WheelPid_RunOne(&wheel_pid_gains.left,
+      controller->left_target_ticks_per_second, left_measured,
+      &controller->left_integral, &controller->left_previous_error,
       elapsed_seconds);
-  controller->right_pwm = WheelPid_RunOne(controller->right_target_ticks_per_second,
-      right_measured, &controller->right_integral, &controller->right_previous_error,
+  controller->right_pwm = WheelPid_RunOne(&wheel_pid_gains.right,
+      controller->right_target_ticks_per_second, right_measured,
+      &controller->right_integral, &controller->right_previous_error,
       elapsed_seconds);
 
   return true;
@@ -323,7 +330,7 @@ void WheelPid_LoadSavedGains(void)
 {
   const WheelPidFlashRecord *record =
       (const WheelPidFlashRecord *)WHEEL_PID_FLASH_ADDRESS;
-  WheelPidGains saved_gains;
+  WheelPidGainSet saved_gains;
 
   /* An erased sector or a record from another firmware version is ignored. */
   if ((record->magic != WHEEL_PID_FLASH_MAGIC) ||
@@ -333,19 +340,26 @@ void WheelPid_LoadSavedGains(void)
     return;
   }
 
-  saved_gains.kp = WheelPid_BitsToFloat(record->kp_bits);
-  saved_gains.ki = WheelPid_BitsToFloat(record->ki_bits);
-  saved_gains.kd = WheelPid_BitsToFloat(record->kd_bits);
+  saved_gains.left.kp = WheelPid_BitsToFloat(record->left_kp_bits);
+  saved_gains.left.ki = WheelPid_BitsToFloat(record->left_ki_bits);
+  saved_gains.left.kd = WheelPid_BitsToFloat(record->left_kd_bits);
+  saved_gains.right.kp = WheelPid_BitsToFloat(record->right_kp_bits);
+  saved_gains.right.ki = WheelPid_BitsToFloat(record->right_ki_bits);
+  saved_gains.right.kd = WheelPid_BitsToFloat(record->right_kd_bits);
 
-  if (WheelPid_GainIsValid(saved_gains.kp) &&
-      WheelPid_GainIsValid(saved_gains.ki) &&
-      WheelPid_GainIsValid(saved_gains.kd))
+  if (WheelPid_GainIsValid(saved_gains.left.kp) &&
+      WheelPid_GainIsValid(saved_gains.left.ki) &&
+      WheelPid_GainIsValid(saved_gains.left.kd) &&
+      WheelPid_GainIsValid(saved_gains.right.kp) &&
+      WheelPid_GainIsValid(saved_gains.right.ki) &&
+      WheelPid_GainIsValid(saved_gains.right.kd))
   {
     wheel_pid_gains = saved_gains;
   }
 }
 
-bool WheelPid_SetGains(float kp, float ki, float kd)
+static bool WheelPid_SetOneGains(WheelPidGains *gains, float kp, float ki,
+    float kd)
 {
   if (!WheelPid_GainIsValid(kp) || !WheelPid_GainIsValid(ki) ||
       !WheelPid_GainIsValid(kd))
@@ -353,13 +367,36 @@ bool WheelPid_SetGains(float kp, float ki, float kd)
     return false;
   }
 
-  wheel_pid_gains.kp = kp;
-  wheel_pid_gains.ki = ki;
-  wheel_pid_gains.kd = kd;
+  gains->kp = kp;
+  gains->ki = ki;
+  gains->kd = kd;
   return true;
 }
 
-void WheelPid_GetGains(WheelPidGains *gains)
+bool WheelPid_SetBothGains(float kp, float ki, float kd)
+{
+  if (!WheelPid_GainIsValid(kp) || !WheelPid_GainIsValid(ki) ||
+      !WheelPid_GainIsValid(kd))
+  {
+    return false;
+  }
+
+  WheelPid_SetOneGains(&wheel_pid_gains.left, kp, ki, kd);
+  WheelPid_SetOneGains(&wheel_pid_gains.right, kp, ki, kd);
+  return true;
+}
+
+bool WheelPid_SetLeftGains(float kp, float ki, float kd)
+{
+  return WheelPid_SetOneGains(&wheel_pid_gains.left, kp, ki, kd);
+}
+
+bool WheelPid_SetRightGains(float kp, float ki, float kd)
+{
+  return WheelPid_SetOneGains(&wheel_pid_gains.right, kp, ki, kd);
+}
+
+void WheelPid_GetGains(WheelPidGainSet *gains)
 {
   if (gains != NULL)
   {
@@ -378,9 +415,12 @@ bool WheelPid_SaveGains(void)
 
   record.magic = WHEEL_PID_FLASH_MAGIC;
   record.version = WHEEL_PID_FLASH_VERSION;
-  record.kp_bits = WheelPid_FloatToBits(wheel_pid_gains.kp);
-  record.ki_bits = WheelPid_FloatToBits(wheel_pid_gains.ki);
-  record.kd_bits = WheelPid_FloatToBits(wheel_pid_gains.kd);
+  record.left_kp_bits = WheelPid_FloatToBits(wheel_pid_gains.left.kp);
+  record.left_ki_bits = WheelPid_FloatToBits(wheel_pid_gains.left.ki);
+  record.left_kd_bits = WheelPid_FloatToBits(wheel_pid_gains.left.kd);
+  record.right_kp_bits = WheelPid_FloatToBits(wheel_pid_gains.right.kp);
+  record.right_ki_bits = WheelPid_FloatToBits(wheel_pid_gains.right.ki);
+  record.right_kd_bits = WheelPid_FloatToBits(wheel_pid_gains.right.kd);
   record.checksum = WheelPid_RecordChecksum(&record);
 
   if (HAL_FLASH_Unlock() != HAL_OK)

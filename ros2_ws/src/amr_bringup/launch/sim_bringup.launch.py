@@ -11,6 +11,7 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     teleop = LaunchConfiguration('teleop')
+    start_keyboard_teleop = LaunchConfiguration('start_keyboard_teleop')
     use_rviz = LaunchConfiguration('use_rviz')
     world = LaunchConfiguration('world')
     timeout_s = LaunchConfiguration('timeout_s')
@@ -56,15 +57,23 @@ def generate_launch_description():
         executable='keyboard_teleop',
         name='keyboard_teleop',
         output='screen',
-        remappings=[('/cmd_vel', '/cmd_vel_raw')],
-        condition=IfCondition(teleop),
+        remappings=[('cmd_vel', 'cmd_vel_raw')],
+        condition=IfCondition(start_keyboard_teleop),
     )
 
     return LaunchDescription([
         DeclareLaunchArgument(
             'teleop',
             default_value='false',
-            description='Start keyboard teleop and the /cmd_vel timeout safety node.',
+            description='Start the /cmd_vel_raw -> /cmd_vel timeout safety node.',
+        ),
+        DeclareLaunchArgument(
+            'start_keyboard_teleop',
+            default_value='false',
+            description=(
+                'Try to start keyboard teleop inside this launch. Usually leave '
+                'false and run keyboard_teleop in a separate terminal instead.'
+            ),
         ),
         DeclareLaunchArgument(
             'use_rviz',

@@ -580,10 +580,10 @@ double STM32SystemHardware::ticks_to_radians(long long ticks) const
 {
   // Convert absolute encoder tick count into wheel angle.
   //
-  // Example with 100 ticks/rev:
+  // Example with 20 ticks/rev:
   //
-  //   100 ticks -> 2*pi radians
-  //    50 ticks -> pi radians
+  //   20 ticks -> 2*pi radians
+  //   10 ticks -> pi radians
   return static_cast<double>(ticks) * 2.0 * M_PI /
          static_cast<double>(ticks_per_revolution_);
 }
@@ -592,9 +592,9 @@ double STM32SystemHardware::ticks_per_sec_to_rad_per_sec(int ticks_per_sec) cons
 {
   // Convert measured encoder rate into ROS angular velocity.
   //
-  // Example with 100 ticks/rev:
+  // Example with 20 ticks/rev:
   //
-  //   100 ticks/s -> 2*pi rad/s -> 1 wheel rev/s
+  //   20 ticks/s -> 2*pi rad/s -> 1 wheel rev/s
   return static_cast<double>(ticks_per_sec) * 2.0 * M_PI /
          static_cast<double>(ticks_per_revolution_);
 }

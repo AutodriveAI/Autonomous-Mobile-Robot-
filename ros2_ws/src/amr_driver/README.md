@@ -28,7 +28,7 @@ teleop / navigation
         │ encoder pulses      │
         ▼                     │
  STM32 telemetry ─────────────┘
-        │ serial: LTicks, LPWM, LCTPS, RTicks, RPWM, RCTPS
+        │ serial: E,<time_ms>,<signed_left_ticks>,<signed_right_ticks>
         ▼
    amr_driver_node
         ├── publishes /odom and optional odom → base_link TF
@@ -47,7 +47,7 @@ robot-level kinematics, odometry, TF, and visualization.
 | `amr_driver_node.py` | ROS-facing node: parameters, `/cmd_vel` subscriber, timer, publishers, TF, and lifecycle. |
 | `stm32_transport.py` | Serial port connection, STM32 command formatting, background line reader, and telemetry parsing. |
 | `differential_drive.py` | Pure wheel/robot kinematic equations; it does not import ROS. |
-| `odometry.py` | Integrates encoder speed feedback into `x`, `y`, heading, and RViz wheel-joint angles. |
+| `odometry.py` | Integrates signed encoder-position feedback into `x`, `y`, heading, and RViz wheel-joint angles. |
 | `config/amr_driver.yaml` | Port, geometry, frames, command rate, and safety-timeout parameters. |
 | `launch/amr_driver.launch.py` | Starts `amr_driver_node` using the YAML configuration. |
 
@@ -83,8 +83,8 @@ V,<left_ticks_per_second>,<right_ticks_per_second>\n
 For example:
 
 ```text
-V,200,200
-V,-100,100
+V,25,25
+V,-20,20
 V,0,0
 ```
 
@@ -98,35 +98,35 @@ independent watchdog as a second safety layer.
 The STM32 periodically sends a human-readable telemetry line containing:
 
 ```text
-LTicks:<count>  LPWM:<pwm>  LCTPS:<ticks/s>
-RTicks:<count>  RPWM:<pwm>  RCTPS:<ticks/s>
+E,<time_ms>,<signed_left_ticks>,<signed_right_ticks>
 ```
 
 `stm32_transport.py` parses the values into a `Telemetry` object.
 
-- `LTicks` and `RTicks` are the raw single-channel encoder counts.
-- `LCTPS` and `RCTPS` are the wheel PID controller's measured signed tick
-  rates. They are used for velocity and odometry.
-- `LPWM` and `RPWM` help diagnose PID and motor behavior.
+- `time_ms` is the STM32 millisecond tick when the telemetry was sent.
+- `signed_left_ticks` and `signed_right_ticks` are total wheel encoder
+  positions. Roughly `ticks_per_revolution` ticks should equal one full wheel
+  rotation in RViz.
 
-The raw encoders are currently single-channel, so they do not independently
-report direction. The STM32 assigns the sign of its measured rate from the
-current commanded direction. This is adequate for controlled operation, but
-true direction sensing later requires quadrature encoders or another direction
-source.
+The encoders are currently single-channel, so they do not independently report
+direction. The STM32 assigns each new pulse's sign from the active wheel
+command direction. When no command is active, hand-rotated ticks default to
+positive. This is adequate for controlled operation and manual wheel-rotation
+tests, but true direction sensing later requires quadrature encoders or another
+direction source.
 
-`odometry.py` converts ticks/s back into wheel m/s, applies differential-drive
-forward kinematics, and integrates the result over each received telemetry
-interval. It publishes:
+`odometry.py` subtracts the previous signed total from the current signed total
+to calculate tick deltas. It then converts those deltas into wheel travel,
+wheel-joint angles, robot velocity, and planar odometry. It publishes:
 
 - `/odom` (`nav_msgs/Odometry`): estimated pose and velocity.
 - `odom → base_link` TF, when `publish_tf: true`.
 - `/joint_states` (`sensor_msgs/JointState`): wheel angles used by
   `robot_state_publisher` to animate the real wheels in RViz.
 
-The exported Onshape right-wheel joint has the opposite axis direction, so the
-right visual wheel angle is negated in `odometry.py`. This changes only RViz
-animation; it does not change physical motor direction.
+Because the driver uses total tick positions, one measured physical wheel turn
+is the easiest sanity check: if the encoder reports about 20 ticks/revolution,
+then a 20-tick change should rotate the RViz wheel by about 360 degrees.
 
 ## Configuration
 
@@ -139,7 +139,7 @@ The most important values are:
 | `baud_rate` | Must match STM32 USART2: `115200`. |
 | `wheel_radius_m` | Measured loaded wheel radius in metres. |
 | `wheel_separation_m` | Distance between left/right wheel contact-center lines in metres. |
-| `ticks_per_revolution` | `100` for the present 100-slot encoder disk on the wheel axle. |
+| `ticks_per_revolution` | `20` for the present HC-020K single-channel 20-slit encoder disk on the wheel axle. |
 | `max_ticks_per_second` | ROS-side target limit; must not exceed the STM32's accepted limit. |
 | `publish_rate_hz` | Rate for refreshing wheel target commands. |
 | `cmd_vel_timeout_s` | ROS-side duration without `/cmd_vel` before commanding a stop. |

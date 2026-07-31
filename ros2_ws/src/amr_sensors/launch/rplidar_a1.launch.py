@@ -50,7 +50,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             'frame_id',
-            default_value='lidar_link',
+            default_value='lidar_scan_link',
             description='TF frame used in the LaserScan message header.',
         ),
         DeclareLaunchArgument(

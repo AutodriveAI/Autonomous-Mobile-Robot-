@@ -11,10 +11,10 @@
 /*
  * Low-level STM32 command watchdog.
  *
- * For this diagnostic test, 0U disables the firmware-side timeout so we can
- * check whether the periodic one-second wheel stop is caused by this layer.
+ * 0U disables the firmware-side timeout.
  *
- * Restore to 300U after the test for normal safety behavior.
+ * For the current odometry/testing phase, ROS owns command timing and sends
+ * explicit stop commands.  Re-enable this later for standalone firmware safety.
  */
 #define COMMAND_TIMEOUT_MS 0U
 #define TELEMETRY_PERIOD_MS 50U
@@ -35,6 +35,10 @@ static int right_raw_pwm = 0;
 static uint32_t last_valid_command_ms = 0U;
 static uint32_t last_telemetry_ms = 0U;
 static uint32_t telemetry_pause_until_ms = 0U;
+static uint32_t left_previous_unsigned_count = 0U;
+static uint32_t right_previous_unsigned_count = 0U;
+static int32_t left_signed_count = 0;
+static int32_t right_signed_count = 0;
 
 /* A fixed buffer prevents malformed serial traffic from consuming arbitrary memory. */
 static uint8_t uart_rx_byte = 0U;
@@ -43,7 +47,7 @@ static uint8_t uart_rx_index = 0U;
 static uint8_t uart_rx_overflow = 0U;
 static char telemetry_buffer[TELEMETRY_BUFFER_SIZE];
 
-/* Send short acknowledgements for tuning commands; telemetry remains "left,right". */
+/* Send short acknowledgements for tuning and reset commands. */
 static void RobotControl_SendReply(const char *reply)
 {
   HAL_UART_Transmit(robot_uart, (uint8_t *)reply, (uint16_t)strlen(reply), 10U);
@@ -65,28 +69,76 @@ static bool RobotControl_TelemetryIsPaused(uint32_t now_ms)
 /* Print gains to three decimal places without requiring floating-point printf support. */
 static void RobotControl_SendPidGains(void)
 {
-  WheelPidGains gains;
-  long kp_milli;
-  long ki_milli;
-  long kd_milli;
+  WheelPidGainSet gains;
+  long left_kp_milli;
+  long left_ki_milli;
+  long left_kd_milli;
+  long right_kp_milli;
+  long right_ki_milli;
+  long right_kd_milli;
   int length;
 
   WheelPid_GetGains(&gains);
-  kp_milli = (long)((gains.kp * 1000.0f) + 0.5f);
-  ki_milli = (long)((gains.ki * 1000.0f) + 0.5f);
-  kd_milli = (long)((gains.kd * 1000.0f) + 0.5f);
+  left_kp_milli = (long)((gains.left.kp * 1000.0f) + 0.5f);
+  left_ki_milli = (long)((gains.left.ki * 1000.0f) + 0.5f);
+  left_kd_milli = (long)((gains.left.kd * 1000.0f) + 0.5f);
+  right_kp_milli = (long)((gains.right.kp * 1000.0f) + 0.5f);
+  right_ki_milli = (long)((gains.right.ki * 1000.0f) + 0.5f);
+  right_kd_milli = (long)((gains.right.kd * 1000.0f) + 0.5f);
 
   length = snprintf(telemetry_buffer, sizeof(telemetry_buffer),
-      "PID,%ld.%03ld,%ld.%03ld,%ld.%03ld\r\n",
-      kp_milli / 1000L, kp_milli % 1000L,
-      ki_milli / 1000L, ki_milli % 1000L,
-      kd_milli / 1000L, kd_milli % 1000L);
+      "PID,L,%ld.%03ld,%ld.%03ld,%ld.%03ld,"
+      "R,%ld.%03ld,%ld.%03ld,%ld.%03ld\r\n",
+      left_kp_milli / 1000L, left_kp_milli % 1000L,
+      left_ki_milli / 1000L, left_ki_milli % 1000L,
+      left_kd_milli / 1000L, left_kd_milli % 1000L,
+      right_kp_milli / 1000L, right_kp_milli % 1000L,
+      right_ki_milli / 1000L, right_ki_milli % 1000L,
+      right_kd_milli / 1000L, right_kd_milli % 1000L);
 
   if ((length > 0) && (length < (int)sizeof(telemetry_buffer)))
   {
     HAL_UART_Transmit(robot_uart, (uint8_t *)telemetry_buffer,
         (uint16_t)length, 10U);
   }
+}
+
+static bool RobotControl_ParseThreeGains(const char *text, float *kp,
+    float *ki, float *kd)
+{
+  char *end_ptr;
+  const char *gain_text;
+
+  *kp = strtof(text, &end_ptr);
+  if ((end_ptr == text) || (*end_ptr != ','))
+  {
+    return false;
+  }
+
+  gain_text = end_ptr + 1;
+  *ki = strtof(gain_text, &end_ptr);
+  if ((end_ptr == gain_text) || (*end_ptr != ','))
+  {
+    return false;
+  }
+
+  gain_text = end_ptr + 1;
+  *kd = strtof(gain_text, &end_ptr);
+  if ((end_ptr == gain_text) || (*end_ptr != '\0'))
+  {
+    return false;
+  }
+
+  return true;
+}
+
+static void RobotControl_AcceptPidTune(uint32_t now_ms, const char *reply)
+{
+  WheelSpeedController_ResetPidHistory(&speed_controller, now_ms,
+      Encoder_GetLeftCount(), Encoder_GetRightCount());
+  last_valid_command_ms = now_ms;
+  RobotControl_PauseTelemetry(now_ms, PID_SET_TELEMETRY_PAUSE_MS);
+  RobotControl_SendReply(reply);
 }
 
 static int RobotControl_ClampPwm(long pwm)
@@ -101,6 +153,87 @@ static int RobotControl_ClampPwm(long pwm)
   }
 
   return (int)pwm;
+}
+
+static int RobotControl_LeftDirectionSign(void)
+{
+  /*
+   * Our present encoders are single-channel sensors, so the raw pulse counter
+   * only knows "a pulse happened"; it cannot know forward versus backward.
+   *
+   * For normal driving, direction comes from the command currently being
+   * applied to that wheel:
+   *   - positive command: add new pulses to the signed total,
+   *   - negative command: subtract new pulses from the signed total,
+   *   - zero/no command: default to add, useful for hand-rotating a wheel.
+   */
+  if ((control_mode == CONTROL_MODE_SPEED_PID) &&
+      (speed_controller.left_target_ticks_per_second < 0.0f))
+  {
+    return -1;
+  }
+
+  if ((control_mode == CONTROL_MODE_RAW_PWM) && (left_raw_pwm < 0))
+  {
+    return -1;
+  }
+
+  return 1;
+}
+
+static int RobotControl_RightDirectionSign(void)
+{
+  if ((control_mode == CONTROL_MODE_SPEED_PID) &&
+      (speed_controller.right_target_ticks_per_second < 0.0f))
+  {
+    return -1;
+  }
+
+  if ((control_mode == CONTROL_MODE_RAW_PWM) && (right_raw_pwm < 0))
+  {
+    return -1;
+  }
+
+  return 1;
+}
+
+static void RobotControl_UpdateSignedEncoderTotals(void)
+{
+  uint32_t left_count;
+  uint32_t right_count;
+  uint32_t left_delta;
+  uint32_t right_delta;
+
+  /*
+   * Encoder_Get*Count() returns the raw debounced pulse totals from encoder.c.
+   * They only increase.  Unsigned subtraction keeps the delta correct even if
+   * a 32-bit raw counter eventually wraps around.
+   */
+  left_count = Encoder_GetLeftCount();
+  right_count = Encoder_GetRightCount();
+  left_delta = left_count - left_previous_unsigned_count;
+  right_delta = right_count - right_previous_unsigned_count;
+  left_previous_unsigned_count = left_count;
+  right_previous_unsigned_count = right_count;
+
+  left_signed_count += (int32_t)(RobotControl_LeftDirectionSign() *
+      (int32_t)left_delta);
+  right_signed_count += (int32_t)(RobotControl_RightDirectionSign() *
+      (int32_t)right_delta);
+}
+
+static void RobotControl_ResetSignedEncoderTotals(void)
+{
+  /*
+   * Reset both the raw software pulse counters and the signed
+   * odometry counters.  The saved raw baselines are refreshed immediately so
+   * the next delta starts from zero instead of re-counting old pulses.
+   */
+  Encoder_ResetCounts();
+  left_previous_unsigned_count = Encoder_GetLeftCount();
+  right_previous_unsigned_count = Encoder_GetRightCount();
+  left_signed_count = 0;
+  right_signed_count = 0;
 }
 
 static void RobotControl_Stop(uint32_t now_ms)
@@ -123,7 +256,8 @@ static void RobotControl_ProcessLine(char *line)
   uint32_t now_ms;
 
   /*
-   * P,<kp>,<ki>,<kd> changes gains immediately, but does not write Flash.
+   * P,<kp>,<ki>,<kd> changes both wheel gains immediately, but does not write
+   * Flash. PL changes only left gains. PR changes only right gains.
    * SAVE is deliberately separate: Flash has limited erase endurance and the
    * write operation should happen only after the user accepts a tuning value.
    */
@@ -155,7 +289,7 @@ static void RobotControl_ProcessLine(char *line)
   /* R means "reset encoder totals"; it does not change PID gains or targets. */
   if (strcmp(line, "R") == 0)
   {
-    Encoder_ResetCounts();
+    RobotControl_ResetSignedEncoderTotals();
     now_ms = HAL_GetTick();
     WheelSpeedController_ResetPidHistory(&speed_controller, now_ms,
         Encoder_GetLeftCount(), Encoder_GetRightCount());
@@ -165,43 +299,62 @@ static void RobotControl_ProcessLine(char *line)
     return;
   }
 
-  if ((line[0] == 'P') && (line[1] == ','))
+  if (((line[0] == 'P') && (line[1] == ',')) ||
+      ((line[0] == 'P') && (line[1] == 'L') && (line[2] == ',')) ||
+      ((line[0] == 'P') && (line[1] == 'R') && (line[2] == ',')))
   {
-    char *gain_text;
     float kp;
     float ki;
     float kd;
+    bool accepted = false;
+    const char *gain_text;
 
-    kp = strtof(&line[2], &end_ptr);
-    if ((end_ptr == &line[2]) || (*end_ptr != ','))
+    if (line[1] == ',')
     {
-      return;
+      gain_text = &line[2];
     }
-    gain_text = end_ptr + 1;
-    ki = strtof(gain_text, &end_ptr);
-    if ((end_ptr == gain_text) || (*end_ptr != ','))
+    else
     {
-      return;
+      gain_text = &line[3];
     }
-    gain_text = end_ptr + 1;
-    kd = strtof(gain_text, &end_ptr);
-    if ((end_ptr == gain_text) || (*end_ptr != '\0'))
+
+    if (!RobotControl_ParseThreeGains(gain_text, &kp, &ki, &kd))
     {
       return;
     }
 
-    if (!WheelPid_SetGains(kp, ki, kd))
+    if (line[1] == ',')
+    {
+      accepted = WheelPid_SetBothGains(kp, ki, kd);
+    }
+    else if (line[1] == 'L')
+    {
+      accepted = WheelPid_SetLeftGains(kp, ki, kd);
+    }
+    else
+    {
+      accepted = WheelPid_SetRightGains(kp, ki, kd);
+    }
+
+    if (!accepted)
     {
       RobotControl_SendReply("ERR,P\r\n");
       return;
     }
 
     now_ms = HAL_GetTick();
-    WheelSpeedController_ResetPidHistory(&speed_controller, now_ms,
-        Encoder_GetLeftCount(), Encoder_GetRightCount());
-    last_valid_command_ms = now_ms;
-    RobotControl_PauseTelemetry(now_ms, PID_SET_TELEMETRY_PAUSE_MS);
-    RobotControl_SendReply("OK,P\r\n");
+    if (line[1] == 'L')
+    {
+      RobotControl_AcceptPidTune(now_ms, "OK,PL\r\n");
+    }
+    else if (line[1] == 'R')
+    {
+      RobotControl_AcceptPidTune(now_ms, "OK,PR\r\n");
+    }
+    else
+    {
+      RobotControl_AcceptPidTune(now_ms, "OK,P\r\n");
+    }
     return;
   }
 
@@ -286,8 +439,6 @@ static void RobotControl_ProcessByte(uint8_t byte)
 static void RobotControl_SendTelemetry(uint32_t now_ms)
 {
   int length;
-  long left_ctps;
-  long right_ctps;
 
   if (RobotControl_TelemetryIsPaused(now_ms))
   {
@@ -299,23 +450,19 @@ static void RobotControl_SendTelemetry(uint32_t now_ms)
     return;
   }
 
-  /*
-   * Speeds are kept as float internally, but integer ticks/s keeps the serial
-   * output compact and avoids requiring floating-point printf support.
-   */
-  left_ctps = (long)WheelSpeedController_GetLeftMeasuredTicksPerSecond(
-      &speed_controller);
-  right_ctps = (long)WheelSpeedController_GetRightMeasuredTicksPerSecond(
-      &speed_controller);
-
   length = snprintf(telemetry_buffer, sizeof(telemetry_buffer),
-      /* Fixed-width fields keep the columns aligned as values gain digits. */
-      "LTicks:%-10lu   LPWM:%-6d   LCTPS:%-7ld    "
-      "RTicks:%-10lu   RPWM:%-6d   RCTPS:%-7ld\r\n",
-      (unsigned long)Encoder_GetLeftCount(),
-      WheelSpeedController_GetLeftPwm(&speed_controller), left_ctps,
-      (unsigned long)Encoder_GetRightCount(),
-      WheelSpeedController_GetRightPwm(&speed_controller), right_ctps);
+      /*
+       * Compact odometry telemetry:
+       *   E,<STM32 milliseconds>,<signed left total>,<signed right total>
+       *
+       * ROS calculates tick deltas, wheel velocity, wheel angles, and odometry
+       * from these signed totals.  Keeping time_ms in the message lets ROS use
+       * the STM32's sampling interval instead of guessing from USB arrival time.
+       */
+      "E,%lu,%ld,%ld\r\n",
+      (unsigned long)now_ms,
+      (long)left_signed_count,
+      (long)right_signed_count);
 
   if ((length > 0) && (length < (int)sizeof(telemetry_buffer)))
   {
@@ -336,6 +483,10 @@ void RobotControl_Init(UART_HandleTypeDef *uart)
   last_valid_command_ms = now_ms;
   last_telemetry_ms = now_ms;
   telemetry_pause_until_ms = now_ms;
+  left_previous_unsigned_count = Encoder_GetLeftCount();
+  right_previous_unsigned_count = Encoder_GetRightCount();
+  left_signed_count = 0;
+  right_signed_count = 0;
   WheelSpeedController_Init(&speed_controller, now_ms,
       Encoder_GetLeftCount(), Encoder_GetRightCount());
 }
@@ -351,6 +502,7 @@ void RobotControl_Update(void)
   }
 
   now_ms = HAL_GetTick();
+  RobotControl_UpdateSignedEncoderTotals();
 
   if ((COMMAND_TIMEOUT_MS > 0U) &&
       ((uint32_t)(now_ms - last_valid_command_ms) >= COMMAND_TIMEOUT_MS))
