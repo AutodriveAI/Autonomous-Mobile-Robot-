@@ -14,6 +14,7 @@ def generate_launch_description():
     use_lidar = LaunchConfiguration('use_lidar')
     config_file = LaunchConfiguration('config_file')
     lidar_serial_port = LaunchConfiguration('lidar_serial_port')
+    lidar_serial_baudrate = LaunchConfiguration('lidar_serial_baudrate')
     lidar_frame_id = LaunchConfiguration('lidar_frame_id')
     lidar_scan_mode = LaunchConfiguration('lidar_scan_mode')
 
@@ -43,10 +44,11 @@ def generate_launch_description():
 
     lidar_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(amr_sensors_share, 'launch', 'rplidar_a1.launch.py')
+            os.path.join(amr_sensors_share, 'launch', 'rplidar_c1.launch.py')
         ),
         launch_arguments={
             'serial_port': lidar_serial_port,
+            'serial_baudrate': lidar_serial_baudrate,
             'frame_id': lidar_frame_id,
             'scan_mode': lidar_scan_mode,
         }.items(),
@@ -81,6 +83,11 @@ def generate_launch_description():
             'lidar_serial_port',
             default_value='/dev/ttyUSB0',
             description='Linux device path for the physical RPLidar.',
+        ),
+        DeclareLaunchArgument(
+            'lidar_serial_baudrate',
+            default_value='460800',
+            description='Physical RPLidar serial baud rate. C1 uses 460800.',
         ),
         DeclareLaunchArgument(
             'lidar_frame_id',

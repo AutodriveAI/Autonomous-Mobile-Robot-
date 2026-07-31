@@ -9,7 +9,7 @@
 
     This file contains Gazebo-only simulation details:
       - contact/friction tuning,
-      - simulated RPLidar A1 laser scans,
+      - simulated RPLidar C1 laser scans,
       - the classic Gazebo differential-drive plugin,
       - simulated wheel joint-state publication.
    -->
@@ -55,38 +55,39 @@
     </gazebo>
 
     <!--
-      Simulated RPLidar A1.
+      Simulated RPLidar C1.
 
-      RPLidar A1 is a 2D 360-degree lidar. These values are intentionally close
+      RPLidar C1 is a 2D 360-degree lidar. These values are intentionally close
       to the real sensor rather than perfect:
 
         scan angle       : 360 degrees
-        scan rate        : about 5.5 Hz
-        useful range     : about 0.15 m to 12 m
+        scan rate        : about 10 Hz
+        samples/scan     : 500, matching 5000 samples/s at 10 Hz
+        useful range     : about 0.05 m to 12 m
         published topic  : /scan
-        frame            : lidar_link
+        frame            : lidar_scan_link
 
       visualize=false keeps Gazebo from drawing all laser rays in the 3D scene.
       The sensor still publishes /scan; only the blue/yellow ray debug overlay
       is hidden.
     -->
     <gazebo reference="lidar_link">
-      <sensor name="rplidar_a1" type="ray">
+      <sensor name="rplidar_c1" type="ray">
         <always_on>true</always_on>
         <visualize>false</visualize>
-        <update_rate>5.5</update_rate>
+        <update_rate>10.0</update_rate>
 
         <ray>
           <scan>
             <horizontal>
-              <samples>360</samples>
+              <samples>500</samples>
               <resolution>1</resolution>
               <min_angle>-3.14159265359</min_angle>
               <max_angle>3.14159265359</max_angle>
             </horizontal>
           </scan>
           <range>
-            <min>0.15</min>
+            <min>0.05</min>
             <max>12.0</max>
             <resolution>0.01</resolution>
           </range>
@@ -97,7 +98,7 @@
           </noise>
         </ray>
 
-        <plugin name="rplidar_a1_controller" filename="libgazebo_ros_ray_sensor.so">
+        <plugin name="rplidar_c1_controller" filename="libgazebo_ros_ray_sensor.so">
           <ros>
             <remapping>~/out:=scan</remapping>
           </ros>

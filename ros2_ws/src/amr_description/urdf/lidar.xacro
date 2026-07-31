@@ -1,11 +1,12 @@
 <?xml version='1.0' encoding='utf-8'?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
   <!--
-    RPLidar A1 description.
+    RPLidar visual and scan-frame description.
 
-    This file owns the lidar frame and its visual CAD meshes. Keeping it
-    separate makes lidar frame calibration and future Gazebo laser plugin work
-    easier without touching the main chassis model.
+    This file owns the lidar frame and visual CAD meshes. The current mesh
+    filenames still come from the earlier Onshape A1 export, so treat them as a
+    visual placeholder until we export/import a dedicated C1 mesh. The active
+    physical launch and Gazebo scan model are configured for RPLidar C1.
   -->
 
   <xacro:macro name="amr_lidar">

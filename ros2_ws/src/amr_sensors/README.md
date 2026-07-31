@@ -1,16 +1,16 @@
 # AMR Sensors
 
 `amr_sensors` contains launch files and notes for physical sensors on the AMR.
-Right now it mainly wraps the physical RPLIDAR A1 driver so the rest of the
+Right now it mainly wraps the physical RPLIDAR C1 driver so the rest of the
 robot can use a consistent `/scan` topic and `lidar_scan_link` frame.
 
-## Launch the RPLIDAR A1 only
+## Launch the RPLIDAR C1 only
 
 ```bash
 cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
 source /opt/ros/humble/setup.bash
 source install/setup.bash
-ros2 launch amr_sensors rplidar_a1.launch.py
+ros2 launch amr_sensors rplidar_c1.launch.py
 ```
 
 If the lidar appears on a different serial port:
@@ -19,7 +19,7 @@ If the lidar appears on a different serial port:
 cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
 source /opt/ros/humble/setup.bash
 source install/setup.bash
-ros2 launch amr_sensors rplidar_a1.launch.py serial_port:=/dev/ttyUSB1
+ros2 launch amr_sensors rplidar_c1.launch.py serial_port:=/dev/ttyUSB1
 ```
 
 Check that scans are being published:
@@ -28,10 +28,32 @@ Check that scans are being published:
 ros2 topic hz /scan
 ```
 
+## Important C1 defaults
+
+The active launch file uses these defaults:
+
+- serial port: `/dev/ttyUSB0`
+- baud rate: `460800`
+- LaserScan topic: `/scan`
+- LaserScan frame: `lidar_scan_link`
+- angle compensation: enabled
+- scan mode: empty string, meaning the driver chooses the typical supported mode
+
+Override the baud rate only if the physical driver/documentation for your exact
+unit says to:
+
+```bash
+cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+ros2 launch amr_sensors rplidar_c1.launch.py serial_baudrate:=460800
+```
+
 ## Stop and restart the lidar motor
 
-The RPLIDAR A1 motor can be stopped when we are not scanning and restarted when
-mapping, localization, or obstacle detection needs scan data again.
+The RPLidar ROS driver may expose start/stop motor services while the node is
+running. Use them when the services are available and you want to pause scanning
+without closing the whole driver.
 
 While the ROS 2 lidar node is running, stop both rotation and useful scan output:
 

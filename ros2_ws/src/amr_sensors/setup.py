@@ -12,6 +12,7 @@ setup(
         ('share/' + package_name, ['README.md']),
         ('share/' + package_name + '/launch', [
             'launch/rplidar_a1.launch.py',
+            'launch/rplidar_c1.launch.py',
         ]),
     ],
     install_requires=['setuptools'],
