@@ -34,6 +34,38 @@ source install/setup.bash
 ros2 launch amr_slam mapping.launch.py
 ```
 
+## Saved maps
+
+Saved maps belong in this package's `maps/` folder:
+
+```text
+src/amr_slam/maps/
+```
+
+Current saved map:
+
+```text
+maps/LakecityFlat4AMap.yaml
+maps/LakecityFlat4AMap.pgm
+```
+
+If you save a new map from Slam Toolbox, save it into that folder instead of
+the workspace root. Keeping maps inside `amr_slam` makes them easier to install,
+commit, and launch later for localization.
+
+## Map resolution
+
+The current mapping config uses:
+
+```text
+resolution: 0.03
+```
+
+That means each map cell/pixel represents 3 cm in the real world.
+
+Older saved maps do not automatically become sharper when this value changes.
+To get a 3 cm/cell map, run mapping again and save/serialize a new map.
+
 ## Important frame chain
 
 During mapping, Slam Toolbox needs this TF chain:

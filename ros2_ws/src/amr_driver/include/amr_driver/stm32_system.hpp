@@ -53,7 +53,7 @@ private:
   std::string serial_port_{"/dev/ttyACM0"};
   int baud_rate_{115200};
   int ticks_per_revolution_{20};
-  int max_ticks_per_second_{60};
+  int max_ticks_per_second_{200};
 
   int serial_fd_{-1};
   std::string receive_buffer_;

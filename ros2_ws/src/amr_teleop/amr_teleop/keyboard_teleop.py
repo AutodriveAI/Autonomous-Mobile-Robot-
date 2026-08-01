@@ -4,9 +4,9 @@ This wrapper intentionally does not implement custom keyboard handling.  It
 only sets project-specific default parameters, then calls the standard ROS 2
 ``teleop_twist_keyboard`` main function.
 
-Measured physical AMR bring-up values:
-  - speed = 0.25 m/s: minimum useful forward/backward teleop speed
-  - turn  = 2.27 rad/s: minimum useful turning teleop command
+Current AMR default teleop values:
+  - speed = 1.021 m/s: equivalent to about 100 ticks/s on both wheels
+  - turn  = 11.669 rad/s: equivalent to about +/-100 ticks/s in-place turning
 
 Both values can still be overridden from the command line with normal ROS
 parameters, for example:
@@ -38,6 +38,6 @@ def _append_default_parameter(parameter_name: str, value: float) -> None:
 
 def main() -> None:
     """Run standard keyboard teleop with AMR-specific speed defaults."""
-    _append_default_parameter('speed', 0.25)
-    _append_default_parameter('turn', 2.27)
+    _append_default_parameter('speed', 1.021)
+    _append_default_parameter('turn', 11.669)
     teleop_twist_keyboard_main()

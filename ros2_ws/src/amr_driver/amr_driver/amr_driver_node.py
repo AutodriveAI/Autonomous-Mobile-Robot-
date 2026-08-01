@@ -58,6 +58,12 @@ class AmrDriverNode(Node):
         # Used only for readable diagnostics: log a V command when its value
         # changes, not every 1 / publish_rate_hz timer tick.
         self._last_logged_velocity_command = None
+        self._last_logged_cmd_vel_command = None
+        # Used for the actual serial link: do not send identical V commands
+        # repeatedly.  The STM32 firmware holds the last wheel target, so once
+        # V,0,0 has been sent, sending the same stop command again only clogs
+        # the serial link and hides useful replies/telemetry.
+        self._last_sent_velocity_command = None
 
         # Keep robot geometry and pose integration outside this ROS-facing
         # class. That makes the mathematical parts independently testable.
@@ -119,10 +125,8 @@ class AmrDriverNode(Node):
         self.declare_parameter('wheel_radius_m', 0.0)
         self.declare_parameter('wheel_separation_m', 0.0)
         # HC-020K single-channel encoder with a 20-slit disk. The old
-        # 100-tick setup reached about 300 ticks/s, i.e. roughly 3 rev/s.
-        # With 20 ticks/rev, the equivalent physical limit is about 60 ticks/s.
         self.declare_parameter('ticks_per_revolution', 20)
-        self.declare_parameter('max_ticks_per_second', 60.0)
+        self.declare_parameter('max_ticks_per_second', 200.0)
 
     def _read_parameters(self) -> dict:
         """Copy ROS parameter values into one convenient immutable-by-convention dict."""
@@ -166,17 +170,20 @@ class AmrDriverNode(Node):
         self._target_left_ticks = int(left_ticks)
         self._target_right_ticks = int(right_ticks)
         self._last_cmd_vel_time = self.get_clock().now()
-        self.get_logger().info(
-            'cmd_vel linear.x=%.3f m/s angular.z=%.3f rad/s -> '
-            'raw ticks L=%.1f R=%.1f -> command V,%d,%d' % (
-                msg.linear.x,
-                msg.angular.z,
-                targets.left,
-                targets.right,
-                self._target_left_ticks,
-                self._target_right_ticks,
+        command = (self._target_left_ticks, self._target_right_ticks)
+        if command != self._last_logged_cmd_vel_command:
+            self.get_logger().info(
+                'cmd_vel linear.x=%.3f m/s angular.z=%.3f rad/s -> '
+                'raw ticks L=%.1f R=%.1f -> command V,%d,%d' % (
+                    msg.linear.x,
+                    msg.angular.z,
+                    targets.left,
+                    targets.right,
+                    self._target_left_ticks,
+                    self._target_right_ticks,
+                )
             )
-        )
+            self._last_logged_cmd_vel_command = command
 
     def _command_timer_callback(self) -> None:
         """Refresh the MCU command or send a stop after cmd_vel goes stale."""
@@ -190,13 +197,17 @@ class AmrDriverNode(Node):
             self._target_left_ticks, self._target_right_ticks)
 
     def _send_velocity_command(self, left_ticks: int, right_ticks: int) -> None:
-        """Send a V command and log it only when the requested value changes."""
+        """Send a V command only when the requested value changes."""
         command = (left_ticks, right_ticks)
+        if command == self._last_sent_velocity_command:
+            return
+
         if command != self._last_logged_velocity_command:
             self.get_logger().info(
                 f'Sending STM32 command: V,{left_ticks},{right_ticks} ticks/s')
             self._last_logged_velocity_command = command
         self._transport.send_velocity(left_ticks, right_ticks)
+        self._last_sent_velocity_command = command
 
     # -- firmware -> odometry / joint states -----------------------------
 

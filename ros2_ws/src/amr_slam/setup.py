@@ -1,3 +1,5 @@
+from glob import glob
+
 from setuptools import setup
 
 package_name = 'amr_slam'
@@ -18,6 +20,7 @@ setup(
         ('share/' + package_name + '/rviz', [
             'rviz/mapping.rviz',
         ]),
+        ('share/' + package_name + '/maps', glob('maps/*')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

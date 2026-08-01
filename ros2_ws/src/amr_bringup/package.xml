@@ -9,8 +9,10 @@
 
   <exec_depend>amr_description</exec_depend>
   <exec_depend>amr_driver</exec_depend>
+  <exec_depend>amr_navigation</exec_depend>
   <exec_depend>amr_sensors</exec_depend>
   <exec_depend>amr_teleop</exec_depend>
+  <exec_depend>joy</exec_depend>
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
 

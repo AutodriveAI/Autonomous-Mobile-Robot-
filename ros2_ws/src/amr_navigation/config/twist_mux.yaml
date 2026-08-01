@@ -1,0 +1,35 @@
+twist_mux:
+  ros__parameters:
+    # twist_mux chooses exactly one input Twist stream at a time.
+    #
+    # Higher priority wins.
+    #
+    # This first navigation package stage only arbitrates commands:
+    #   /cmd_vel_nav      autonomous navigation command, lowest priority
+    #   /cmd_vel_keyboard keyboard teleop override
+    #   /cmd_vel_joy      joystick/gamepad override, highest priority
+    #
+    # The selected command is published as /cmd_vel by launch remapping.
+    topics:
+      nav:
+        topic: /cmd_vel_nav
+        timeout: 0.5
+        priority: 10
+
+      keyboard:
+        topic: /cmd_vel_keyboard
+        timeout: 0.5
+        priority: 80
+
+      joystick:
+        topic: /cmd_vel_joy
+        timeout: 0.5
+        priority: 100
+
+    # Locks are emergency inhibit topics. We are not using them yet, but this
+    # block documents the intended future shape.
+    #
+    # A lock topic normally carries std_msgs/Bool. When true, it blocks lower
+    # priority velocity sources. Later we can add bumper, E-stop, or docking
+    # behavior here.
+    locks: {}

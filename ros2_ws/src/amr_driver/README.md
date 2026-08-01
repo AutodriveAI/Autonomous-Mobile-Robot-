@@ -140,7 +140,7 @@ The most important values are:
 | `wheel_radius_m` | Measured loaded wheel radius in metres. |
 | `wheel_separation_m` | Distance between left/right wheel contact-center lines in metres. |
 | `ticks_per_revolution` | `20` for the present HC-020K single-channel 20-slit encoder disk on the wheel axle. |
-| `max_ticks_per_second` | ROS-side target limit; must not exceed the STM32's accepted limit. |
+| `max_ticks_per_second` | ROS-side target limit. Currently `200 ticks/s`, matching the STM32 accepted `V` command cap. |
 | `publish_rate_hz` | Rate for refreshing wheel target commands. |
 | `cmd_vel_timeout_s` | ROS-side duration without `/cmd_vel` before commanding a stop. |
 

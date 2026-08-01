@@ -53,7 +53,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             'use_rviz',
-            default_value='true',
+            default_value='false',
             description='Open RViz with AMR mapping displays and Slam Toolbox panel.',
         ),
         DeclareLaunchArgument(

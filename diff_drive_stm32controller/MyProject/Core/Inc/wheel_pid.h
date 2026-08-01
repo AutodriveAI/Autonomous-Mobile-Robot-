@@ -27,11 +27,11 @@
 
 /*
  * Safety limit for V commands, in encoder ticks per second.
- * With the current 20-slit single-channel encoder, 60 ticks/s is about
- * 3 wheel revolutions/s. That matches the earlier lifted-wheel safe-speed
- * estimate without accidentally commanding 5x more physical wheel speed.
+ * With the current 20-slit single-channel encoder, 200 ticks/s is about
+ * 10 wheel revolutions/s. Higher-level ROS code should still choose gentler
+ * normal teleop/navigation speeds; this is only the absolute accepted target.
  */
-#define WHEEL_PID_MAX_TARGET_TICKS_PER_SECOND 60.0f
+#define WHEEL_PID_MAX_TARGET_TICKS_PER_SECOND 200.0f
 
 /* The three adjustable PID gains for one wheel controller. */
 typedef struct

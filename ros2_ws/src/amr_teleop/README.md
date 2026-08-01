@@ -1,8 +1,7 @@
 # AMR Teleoperation
 
-`amr_teleop` provides a project-specific command for ROS 2's standard
-`teleop_twist_keyboard` node—the terminal teleop commonly used with TurtleBot
-simulations.
+`amr_teleop` provides project-specific keyboard and Logitech-style joystick
+teleoperation for the AMR.
 
 ```text
 keyboard
@@ -16,8 +15,26 @@ STM32
 motors
 ```
 
-There is no custom keyboard reader, desktop keyboard hook, or
-`command_hold_s` timer in this package. It uses the standard node unchanged.
+For keyboard control there is no custom keyboard reader, desktop keyboard hook,
+or `command_hold_s` timer. The keyboard wrapper uses the standard node
+unchanged.
+
+For joystick control, `joy_node` reads the Linux gamepad device and our
+`joy_teleop` node converts stick axes into `/cmd_vel`. The joystick speed
+parameters are expressed in wheel encoder ticks/s so they match the STM32
+mental model:
+
+```text
+Logitech gamepad
+   ↓
+joy_node
+   ↓  /joy
+joy_teleop
+   ↓  /cmd_vel
+amr_driver
+   ↓  V,<left_ticks_per_second>,<right_ticks_per_second>
+STM32
+```
 
 ## Install the standard teleop package
 
@@ -25,14 +42,14 @@ On the current Ubuntu 22.04 / ROS 2 Humble development computer:
 
 ```bash
 sudo apt update
-sudo apt install -y ros-humble-teleop-twist-keyboard
+sudo apt install -y ros-humble-teleop-twist-keyboard ros-humble-joy
 ```
 
 On the target Ubuntu 20.04 / ROS 2 Foxy computer:
 
 ```bash
 sudo apt update
-sudo apt install -y ros-foxy-teleop-twist-keyboard
+sudo apt install -y ros-foxy-teleop-twist-keyboard ros-foxy-joy
 ```
 
 ## Build
@@ -54,7 +71,7 @@ cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
 source /opt/ros/humble/setup.bash
 source install/setup.bash
 ros2 run amr_teleop keyboard_teleop --ros-args \
-  -p speed:=0.25 -p turn:=2.27
+  -p speed:=1.021 -p turn:=11.669
 ```
 
 The command above is an alias for:
@@ -64,7 +81,7 @@ cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
 source /opt/ros/humble/setup.bash
 source install/setup.bash
 ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args \
-  -p speed:=0.25 -p turn:=2.27
+  -p speed:=1.021 -p turn:=11.669
 ```
 
 The `amr_teleop keyboard_teleop` wrapper uses these AMR defaults automatically,
@@ -75,6 +92,52 @@ cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
 source /opt/ros/humble/setup.bash
 source install/setup.bash
 ros2 run amr_teleop keyboard_teleop
+```
+
+Those defaults are equivalent to about `100 ticks/s` forward on both wheels and
+about `+/-100 ticks/s` for in-place turning with:
+
+- wheel radius: `0.0325 m`
+- wheel separation: `0.175 m`
+- encoder resolution: `20 ticks/rev`
+
+## Run joystick teleop directly
+
+Terminal 1 — start the standard joystick driver:
+
+```bash
+cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+ros2 run joy joy_node --ros-args \
+  -p dev:=/dev/input/js0 \
+  -p deadzone:=0.08 \
+  -p autorepeat_rate:=20.0
+```
+
+Terminal 2 — start AMR joystick teleop:
+
+```bash
+cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+ros2 run amr_teleop joy_teleop --ros-args \
+  -p speed_ticks_per_second:=100.0 \
+  -p turn_ticks_per_second:=100.0
+```
+
+Default joystick mapping:
+
+| Control | Meaning |
+|---|---|
+| Left stick vertical | Forward/backward |
+| Left stick horizontal | Rotate left/right |
+| Centered stick | Publish zero velocity |
+
+If your Logitech mode switch reverses an axis, override the sign:
+
+```bash
+ros2 run amr_teleop joy_teleop --ros-args -p linear_axis_sign:=-1.0
 ```
 
 ## Standard controls
@@ -121,7 +184,7 @@ cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
 source /opt/ros/humble/setup.bash
 source install/setup.bash
 ros2 run amr_teleop keyboard_teleop --ros-args \
-  -p speed:=0.25 -p turn:=2.27
+  -p speed:=1.021 -p turn:=11.669
 ```
 
 For the first physical test, lift the drive wheels off the ground and keep

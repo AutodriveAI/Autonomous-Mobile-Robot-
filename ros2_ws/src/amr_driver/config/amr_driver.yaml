@@ -24,6 +24,6 @@ amr_driver_node:
     # HC-020K single-channel encoder with a 20-slit disk on the wheel axle:
     # one debounced rising edge per slit gives about 20 ticks/wheel revolution.
     ticks_per_revolution: 20
-    # The old 100-tick encoder setup reached roughly 300 ticks/s, i.e. about
-    # 3 wheel rev/s. With 20 ticks/rev, the equivalent limit is about 60 ticks/s.
-    max_ticks_per_second: 60.0
+    # Absolute ROS-side target limit. With the current 20-tick wheel encoder,
+    # 200 ticks/s is about 10 wheel revolutions/s.
+    max_ticks_per_second: 200.0

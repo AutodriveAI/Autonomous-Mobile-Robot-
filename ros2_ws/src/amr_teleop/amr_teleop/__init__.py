@@ -1,1 +1,1 @@
-"""Keyboard teleoperation package for the AMR."""
+"""Keyboard and joystick teleoperation package for the AMR."""

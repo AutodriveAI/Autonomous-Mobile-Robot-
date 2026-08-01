@@ -14,7 +14,7 @@ setup(
     zip_safe=True,
     maintainer='Nilkontha Das',
     maintainer_email='you@example.com',
-    description='Keyboard teleoperation for the autonomous mobile robot.',
+    description='Keyboard and joystick teleoperation for the autonomous mobile robot.',
     license='MIT',
     tests_require=['pytest'],
     entry_points={
@@ -23,6 +23,7 @@ setup(
             # teleop implementation, but inject AMR-specific default speed/turn
             # parameters before handing control to teleop_twist_keyboard.
             'keyboard_teleop = amr_teleop.keyboard_teleop:main',
+            'joy_teleop = amr_teleop.joy_teleop:main',
             'cmd_vel_timeout = amr_teleop.cmd_vel_timeout:main',
         ],
     },

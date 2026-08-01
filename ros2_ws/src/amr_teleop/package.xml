@@ -3,7 +3,7 @@
 <package format="3">
   <name>amr_teleop</name>
   <version>0.1.0</version>
-  <description>Keyboard teleoperation for the autonomous mobile robot.</description>
+  <description>Keyboard and joystick teleoperation for the autonomous mobile robot.</description>
   <maintainer email="you@example.com">Nilkontha Das</maintainer>
   <license>MIT</license>
 
@@ -13,7 +13,9 @@
     commands on /cmd_vel and owns all terminal keyboard handling.
   -->
   <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>joy</exec_depend>
   <exec_depend>rclpy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>teleop_twist_keyboard</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
