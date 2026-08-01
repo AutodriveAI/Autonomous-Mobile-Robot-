@@ -7,6 +7,12 @@ ros2_ws/log/
 **/Debug/
 **/Release/
 
+# STM32CubeIDE/Eclipse local workspace metadata.
+# Keep project source/config files, but ignore machine-specific index/settings
+# that change with local toolchain paths and workspace state.
+diff_drive_stm32controller/.metadata/
+diff_drive_stm32controller/MyProject/.settings/language.settings.xml
+
 # Python caches and test output.
 **/__pycache__/
 *.py[cod]
