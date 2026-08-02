@@ -2,11 +2,78 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
-from launch.conditions import IfCondition
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction
+from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
+
+
+def _is_true(value: str) -> bool:
+    return value.lower() in ('true', '1', 'yes', 'on')
+
+
+def _select_rviz(context):
+    """Start exactly one RViz instance for the selected bringup mode."""
+    if not _is_true(LaunchConfiguration('use_rviz').perform(context)):
+        return []
+
+    start_nav2 = _is_true(LaunchConfiguration('start_nav2').perform(context))
+    start_localisation = _is_true(
+        LaunchConfiguration('start_localisation').perform(context))
+
+    if start_nav2:
+        return [
+            Node(
+                package='rviz2',
+                executable='rviz2',
+                name='rviz2_nav2',
+                output='screen',
+                arguments=[
+                    '-d',
+                    os.path.join(
+                        get_package_share_directory('nav2_bringup'),
+                        'rviz',
+                        'nav2_default_view.rviz',
+                    ),
+                ],
+            )
+        ]
+
+    if start_localisation:
+        return [
+            Node(
+                package='rviz2',
+                executable='rviz2',
+                name='rviz2_localisation',
+                output='screen',
+                arguments=[
+                    '-d',
+                    os.path.join(
+                        get_package_share_directory('amr_localisation'),
+                        'rviz',
+                        'localisation.rviz',
+                    ),
+                ],
+            )
+        ]
+
+    return [
+        Node(
+            package='rviz2',
+            executable='rviz2',
+            name='rviz2_bringup',
+            output='screen',
+            arguments=[
+                '-d',
+                os.path.join(
+                    get_package_share_directory('amr_description'),
+                    'rviz',
+                    'display.rviz',
+                ),
+            ],
+        )
+    ]
 
 
 def generate_launch_description():
@@ -14,7 +81,13 @@ def generate_launch_description():
     use_lidar = LaunchConfiguration('use_lidar')
     start_joy_teleop = LaunchConfiguration('start_joy_teleop')
     start_keyboard_teleop = LaunchConfiguration('start_keyboard_teleop')
+    start_localisation = LaunchConfiguration('start_localisation')
+    start_nav2 = LaunchConfiguration('start_nav2')
+    use_nav2_rviz = LaunchConfiguration('use_nav2_rviz')
+    bypass_twist_mux = LaunchConfiguration('bypass_twist_mux')
     config_file = LaunchConfiguration('config_file')
+    map_file = LaunchConfiguration('map')
+    nav2_params_file = LaunchConfiguration('nav2_params_file')
     lidar_serial_port = LaunchConfiguration('lidar_serial_port')
     lidar_serial_baudrate = LaunchConfiguration('lidar_serial_baudrate')
     lidar_frame_id = LaunchConfiguration('lidar_frame_id')
@@ -27,14 +100,23 @@ def generate_launch_description():
 
     amr_description_share = get_package_share_directory('amr_description')
     amr_driver_share = get_package_share_directory('amr_driver')
+    amr_localisation_share = get_package_share_directory('amr_localisation')
+    amr_navigation_share = get_package_share_directory('amr_navigation')
     amr_sensors_share = get_package_share_directory('amr_sensors')
+    amr_slam_share = get_package_share_directory('amr_slam')
 
+    localisation_active = PythonExpression([
+        "'", start_localisation, "' == 'true' or '", start_nav2, "' == 'true'"
+    ])
     driver_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(amr_driver_share, 'launch', 'amr_driver.launch.py')
         ),
         launch_arguments={
             'config_file': config_file,
+            'cmd_vel_topic': PythonExpression([
+                "'/cmd_vel_nav' if '", bypass_twist_mux, "' == 'true' else '/cmd_vel'"
+            ]),
         }.items(),
     )
 
@@ -44,7 +126,8 @@ def generate_launch_description():
         ),
         launch_arguments={
             'use_gui': 'false',
-            'use_rviz': use_rviz,
+            # robot_bringup owns the "exactly one RViz" policy below.
+            'use_rviz': 'false',
             'use_joint_state_publisher': 'false',
         }.items(),
     )
@@ -61,6 +144,45 @@ def generate_launch_description():
         }.items(),
         condition=IfCondition(use_lidar),
     )
+
+    twist_mux_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(amr_navigation_share, 'launch', 'twist_mux.launch.py')
+        ),
+        launch_arguments={
+            'output_topic': '/cmd_vel',
+        }.items(),
+        condition=UnlessCondition(bypass_twist_mux),
+    )
+
+    localisation_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(amr_localisation_share, 'launch', 'localisation.launch.py')
+        ),
+        launch_arguments={
+            'map': map_file,
+            'use_sim_time': 'false',
+            'scan_topic': '/scan',
+            # robot_bringup owns the "exactly one RViz" policy below.
+            'use_rviz': 'false',
+        }.items(),
+        condition=IfCondition(localisation_active),
+    )
+
+    nav2_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(amr_navigation_share, 'launch', 'nav2.launch.py')
+        ),
+        launch_arguments={
+            'params_file': nav2_params_file,
+            'use_sim_time': 'false',
+            # robot_bringup owns the "exactly one RViz" policy below.
+            'use_rviz': 'false',
+        }.items(),
+        condition=IfCondition(start_nav2),
+    )
+
+    selected_rviz = OpaqueFunction(function=_select_rviz)
 
     joy_node = Node(
         package='joy',
@@ -80,6 +202,7 @@ def generate_launch_description():
         executable='joy_teleop',
         name='joy_teleop',
         output='screen',
+        remappings=[('cmd_vel', '/cmd_vel_joy')],
         parameters=[{
             'speed_ticks_per_second': teleop_speed_ticks_per_second,
             'turn_ticks_per_second': teleop_turn_ticks_per_second,
@@ -92,6 +215,7 @@ def generate_launch_description():
         executable='keyboard_teleop',
         name='keyboard_teleop',
         output='screen',
+        remappings=[('cmd_vel', '/cmd_vel_keyboard')],
         condition=IfCondition(start_keyboard_teleop),
     )
 
@@ -117,9 +241,42 @@ def generate_launch_description():
             ),
         ),
         DeclareLaunchArgument(
+            'start_localisation',
+            default_value='false',
+            description=(
+                'Start physical robot localization only. If use_rviz is true '
+                'and start_nav2 is false, this opens the localization RViz config.'
+            ),
+        ),
+        DeclareLaunchArgument(
+            'start_nav2',
+            default_value='false',
+            description=(
+                'Start AMCL localization and Nav2 autonomous navigation for '
+                'the physical robot. Nav2 publishes to /cmd_vel_nav, then '
+                'twist_mux outputs /cmd_vel for amr_driver.'
+            ),
+        ),
+        DeclareLaunchArgument(
             'use_rviz',
             default_value='true',
             description='Start RViz with encoder-derived joint states.',
+        ),
+        DeclareLaunchArgument(
+            'use_nav2_rviz',
+            default_value='false',
+            description=(
+                'Deprecated/no-op. RViz is now selected by use_rviz plus '
+                'start_nav2/start_localisation priority.'
+            ),
+        ),
+        DeclareLaunchArgument(
+            'bypass_twist_mux',
+            default_value='false',
+            description=(
+                'Diagnostic mode: do not launch twist_mux, and make amr_driver '
+                'subscribe directly to /cmd_vel_nav from Nav2 velocity_smoother.'
+            ),
         ),
         DeclareLaunchArgument(
             'use_lidar',
@@ -130,6 +287,20 @@ def generate_launch_description():
             'config_file',
             default_value=os.path.join(amr_driver_share, 'config', 'amr_driver.yaml'),
             description='Path to the amr_driver parameter YAML file.',
+        ),
+        DeclareLaunchArgument(
+            'map',
+            default_value=os.path.join(
+                amr_slam_share,
+                'maps',
+                'LakecityFlat4AMap.yaml',
+            ),
+            description='Saved map YAML used by AMCL when start_nav2 is true.',
+        ),
+        DeclareLaunchArgument(
+            'nav2_params_file',
+            default_value=os.path.join(amr_navigation_share, 'config', 'nav2_params_real.yaml'),
+            description='Nav2 navigation parameter YAML.',
         ),
         DeclareLaunchArgument(
             'lidar_serial_port',
@@ -176,9 +347,13 @@ def generate_launch_description():
             default_value='100.0',
             description='Full-stick in-place turn wheel target used by joy_teleop.',
         ),
+        selected_rviz,
         driver_launch,
         lidar_launch,
         description_launch,
+        twist_mux_launch,
+        localisation_launch,
+        nav2_launch,
         joy_node,
         joy_teleop,
         keyboard_teleop,

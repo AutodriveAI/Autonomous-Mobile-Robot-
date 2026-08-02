@@ -59,6 +59,7 @@ class AmrDriverNode(Node):
         # changes, not every 1 / publish_rate_hz timer tick.
         self._last_logged_velocity_command = None
         self._last_logged_cmd_vel_command = None
+        self._last_refresh_log_time = self.get_clock().now()
         # Used for the actual serial link: do not send identical V commands
         # repeatedly.  The STM32 firmware holds the last wheel target, so once
         # V,0,0 has been sent, sending the same stop command again only clogs
@@ -127,6 +128,9 @@ class AmrDriverNode(Node):
         # HC-020K single-channel encoder with a 20-slit disk. The old
         self.declare_parameter('ticks_per_revolution', 20)
         self.declare_parameter('max_ticks_per_second', 200.0)
+        self.declare_parameter('min_nonzero_ticks_per_second', 0.0)
+        self.declare_parameter('refresh_nonzero_commands', True)
+        self.declare_parameter('refresh_log_interval_s', 1.0)
 
     def _read_parameters(self) -> dict:
         """Copy ROS parameter values into one convenient immutable-by-convention dict."""
@@ -145,6 +149,9 @@ class AmrDriverNode(Node):
             'wheel_separation_m': g('wheel_separation_m').value,
             'ticks_per_revolution': g('ticks_per_revolution').value,
             'max_ticks_per_second': g('max_ticks_per_second').value,
+            'min_nonzero_ticks_per_second': g('min_nonzero_ticks_per_second').value,
+            'refresh_nonzero_commands': g('refresh_nonzero_commands').value,
+            'refresh_log_interval_s': g('refresh_log_interval_s').value,
         }
 
     # -- cmd_vel -> firmware ---------------------------------------------
@@ -164,6 +171,19 @@ class AmrDriverNode(Node):
         limit = p['max_ticks_per_second']
         left_ticks = max(-limit, min(limit, left_ticks))
         right_ticks = max(-limit, min(limit, right_ticks))
+
+        # Real drivetrain deadband compensation.
+        #
+        # Nav2 may command very small wheel speeds while trying to carefully
+        # align to a path or goal.  Mathematically those commands are valid,
+        # but the physical robot may not move at all because static friction,
+        # motor dead zone, battery voltage, and PID/PWM limits swallow them.
+        #
+        # For the real robot we can lift any nonzero wheel request to a
+        # configurable minimum tick rate.  This is a practical bridge until
+        # the STM32 motor controller has a better feed-forward term.
+        left_ticks = self._apply_min_nonzero_ticks(left_ticks)
+        right_ticks = self._apply_min_nonzero_ticks(right_ticks)
 
         # Firmware protocol carries integers. int() truncates fractional
         # ticks/s, which is acceptable at the current 20 ticks/revolution.
@@ -185,6 +205,15 @@ class AmrDriverNode(Node):
             )
             self._last_logged_cmd_vel_command = command
 
+    def _apply_min_nonzero_ticks(self, ticks: float) -> float:
+        """Raise tiny nonzero wheel commands above the real drivetrain deadband."""
+        minimum = float(self._p['min_nonzero_ticks_per_second'])
+        if minimum <= 0.0 or ticks == 0.0:
+            return ticks
+        if abs(ticks) >= minimum:
+            return ticks
+        return minimum if ticks > 0.0 else -minimum
+
     def _command_timer_callback(self) -> None:
         """Refresh the MCU command or send a stop after cmd_vel goes stale."""
         elapsed = (self.get_clock().now() - self._last_cmd_vel_time).nanoseconds / 1e9
@@ -197,15 +226,36 @@ class AmrDriverNode(Node):
             self._target_left_ticks, self._target_right_ticks)
 
     def _send_velocity_command(self, left_ticks: int, right_ticks: int) -> None:
-        """Send a V command only when the requested value changes."""
+        """Send V commands to the STM32.
+
+        Stop commands are sent only once to avoid clogging the serial link with
+        repeated V,0,0 messages.
+
+        Nonzero commands are refreshed periodically even when unchanged. This
+        makes the real robot behavior easier to debug from logs and keeps the
+        STM32 explicitly reminded of the active command while Nav2 is trying to
+        move.
+        """
         command = (left_ticks, right_ticks)
-        if command == self._last_sent_velocity_command:
+        is_stop = command == (0, 0)
+        if command == self._last_sent_velocity_command and (
+            is_stop or not self._p['refresh_nonzero_commands']
+        ):
             return
 
         if command != self._last_logged_velocity_command:
             self.get_logger().info(
                 f'Sending STM32 command: V,{left_ticks},{right_ticks} ticks/s')
             self._last_logged_velocity_command = command
+            self._last_refresh_log_time = self.get_clock().now()
+        elif not is_stop:
+            elapsed_since_log = (
+                self.get_clock().now() - self._last_refresh_log_time
+            ).nanoseconds / 1e9
+            if elapsed_since_log >= self._p['refresh_log_interval_s']:
+                self.get_logger().info(
+                    f'Refreshing STM32 command: V,{left_ticks},{right_ticks} ticks/s')
+                self._last_refresh_log_time = self.get_clock().now()
         self._transport.send_velocity(left_ticks, right_ticks)
         self._last_sent_velocity_command = command
 

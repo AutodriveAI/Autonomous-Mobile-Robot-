@@ -12,16 +12,23 @@ from launch_ros.actions import Node
 def generate_launch_description():
     start_joy_teleop = LaunchConfiguration('start_joy_teleop')
     start_keyboard_teleop = LaunchConfiguration('start_keyboard_teleop')
+    start_nav2 = LaunchConfiguration('start_nav2')
     use_rviz = LaunchConfiguration('use_rviz')
+    use_nav2_rviz = LaunchConfiguration('use_nav2_rviz')
     world = LaunchConfiguration('world')
+    map_file = LaunchConfiguration('map')
+    nav2_params_file = LaunchConfiguration('nav2_params_file')
     joy_dev = LaunchConfiguration('joy_dev')
     joy_deadzone = LaunchConfiguration('joy_deadzone')
     joy_autorepeat_rate = LaunchConfiguration('joy_autorepeat_rate')
     teleop_speed_ticks_per_second = LaunchConfiguration('teleop_speed_ticks_per_second')
     teleop_turn_ticks_per_second = LaunchConfiguration('teleop_turn_ticks_per_second')
+    extra_gazebo_model_path = LaunchConfiguration('extra_gazebo_model_path')
 
     amr_description_share = get_package_share_directory('amr_description')
+    amr_localisation_share = get_package_share_directory('amr_localisation')
     amr_navigation_share = get_package_share_directory('amr_navigation')
+    amr_slam_share = get_package_share_directory('amr_slam')
 
     sim_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -29,6 +36,7 @@ def generate_launch_description():
         ),
         launch_arguments={
             'world': world,
+            'extra_gazebo_model_path': extra_gazebo_model_path,
         }.items(),
     )
 
@@ -51,6 +59,31 @@ def generate_launch_description():
         launch_arguments={
             'output_topic': '/cmd_vel',
         }.items(),
+    )
+
+    localisation_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(amr_localisation_share, 'launch', 'localisation.launch.py')
+        ),
+        launch_arguments={
+            'map': map_file,
+            'use_sim_time': 'true',
+            'scan_topic': '/scan',
+            'use_rviz': 'false',
+        }.items(),
+        condition=IfCondition(start_nav2),
+    )
+
+    nav2_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(amr_navigation_share, 'launch', 'nav2.launch.py')
+        ),
+        launch_arguments={
+            'params_file': nav2_params_file,
+            'use_sim_time': 'true',
+            'use_rviz': use_nav2_rviz,
+        }.items(),
+        condition=IfCondition(start_nav2),
     )
 
     keyboard_teleop = Node(
@@ -103,14 +136,50 @@ def generate_launch_description():
             ),
         ),
         DeclareLaunchArgument(
-            'use_rviz',
+            'start_nav2',
             default_value='false',
+            description=(
+                'Start AMCL localization and Nav2 autonomous navigation for Gazebo. '
+                'Nav2 publishes to /cmd_vel_nav, then twist_mux outputs /cmd_vel.'
+            ),
+        ),
+        DeclareLaunchArgument(
+            'use_rviz',
+            default_value='true',
             description='Start RViz with Gazebo joint states instead of fake joints.',
         ),
         DeclareLaunchArgument(
+            'use_nav2_rviz',
+            default_value='false',
+            description='Start RViz with the standard Nav2 goal-setting panel.',
+        ),
+        DeclareLaunchArgument(
             'world',
-            default_value=os.path.join(amr_description_share, 'worlds', 'obstacles.world'),
+            default_value=os.path.join(amr_description_share, 'worlds', 'simple_home.world'),
             description='Gazebo world file to load.',
+        ),
+        DeclareLaunchArgument(
+            'extra_gazebo_model_path',
+            default_value='',
+            description=(
+                'Optional extra Gazebo model directory for external worlds, '
+                'for example turtlebot3_gazebo/models when using '
+                'turtlebot3_house.world.'
+            ),
+        ),
+        DeclareLaunchArgument(
+            'map',
+            default_value=os.path.join(
+                amr_slam_share,
+                'maps',
+                'LakecityFlat4AMap.yaml',
+            ),
+            description='Saved map YAML used by AMCL when start_nav2 is true.',
+        ),
+        DeclareLaunchArgument(
+            'nav2_params_file',
+            default_value=os.path.join(amr_navigation_share, 'config', 'nav2_params.yaml'),
+            description='Nav2 navigation parameter YAML.',
         ),
         DeclareLaunchArgument(
             'timeout_s',
@@ -145,6 +214,8 @@ def generate_launch_description():
         sim_launch,
         rviz_launch,
         twist_mux_launch,
+        localisation_launch,
+        nav2_launch,
         keyboard_teleop,
         joy_node,
         joy_teleop,

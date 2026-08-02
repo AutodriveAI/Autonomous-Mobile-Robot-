@@ -47,7 +47,7 @@ def generate_launch_description():
     package_share_parent = os.path.dirname(package_share)
 
     robot_xacro_path = os.path.join(package_share, 'urdf', 'robot.urdf.xacro')
-    default_world_path = os.path.join(package_share, 'worlds', 'obstacles.world')
+    default_world_path = os.path.join(package_share, 'worlds', 'simple_home.world')
 
     robot_description = ParameterValue(
         build_robot_description(robot_xacro_path),
@@ -56,6 +56,7 @@ def generate_launch_description():
 
     world = LaunchConfiguration('world')
     use_sim_time = LaunchConfiguration('use_sim_time')
+    extra_gazebo_model_path = LaunchConfiguration('extra_gazebo_model_path')
 
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -103,6 +104,10 @@ def generate_launch_description():
             value=[
                 package_share_parent,
                 ':',
+                extra_gazebo_model_path,
+                ':',
+                '/usr/share/gazebo-11/models',
+                ':',
                 EnvironmentVariable('GAZEBO_MODEL_PATH', default_value=''),
             ],
         ),
@@ -115,6 +120,15 @@ def generate_launch_description():
             'use_sim_time',
             default_value='true',
             description='Use Gazebo simulation time.',
+        ),
+        DeclareLaunchArgument(
+            'extra_gazebo_model_path',
+            default_value='',
+            description=(
+                'Optional extra Gazebo model directory. Use this when loading '
+                'an external world that contains model:// references, for '
+                'example the turtlebot3_gazebo/models folder.'
+            ),
         ),
         gazebo,
         robot_state_publisher,

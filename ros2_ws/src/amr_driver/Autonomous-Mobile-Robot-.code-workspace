@@ -5,6 +5,12 @@
 		},
 		{
 			"path": "../../../../articubot_one"
+		},
+		{
+			"path": "../../../../Autodrive_F1Tenth"
+		},
+		{
+			"path": "../../../../turtlebot3_simulations"
 		}
 	],
 	"settings": {

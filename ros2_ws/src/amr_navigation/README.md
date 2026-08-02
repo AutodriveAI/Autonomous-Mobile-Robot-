@@ -1,15 +1,35 @@
 # amr_navigation
 
-This package owns navigation command arbitration for the AMR.
+This package owns the AMR navigation layer.
 
-At this stage it does not launch the full Nav2 planner yet. First, it provides
-`twist_mux`, so keyboard, joystick, and future Nav2 commands do not fight each
-other on `/cmd_vel`.
+It has two jobs:
+
+1. Run `twist_mux`, so autonomous Nav2, keyboard teleop, and joystick teleop do
+   not fight each other.
+2. Run the Nav2 path-planning/path-following stack.
+
+Localization is intentionally kept in `amr_localisation`. That package loads
+the saved map and runs AMCL. This package assumes localization is already
+publishing:
+
+```text
+map -> odom
+```
+
+and that either Gazebo or the real robot driver is publishing:
+
+```text
+odom -> base_link
+```
 
 ## Command topic flow
 
 ```text
-Nav2 planner later
+Nav2 controller
+    ↓
+/cmd_vel_nav_raw
+    ↓
+Nav2 velocity_smoother
     ↓
 /cmd_vel_nav
 
@@ -21,16 +41,19 @@ joystick teleop
     ↓
 /cmd_vel_joy
 
-all three
+all command sources
     ↓
 twist_mux
     ↓
 /cmd_vel
     ↓
-Gazebo diff drive or real amr_driver
+Gazebo diff-drive plugin or real amr_driver
 ```
 
-## Priorities
+The important idea is that Nav2 does not directly command the robot. Nav2 is
+only one candidate command source. `twist_mux` remains the final command gate.
+
+## `twist_mux` priorities
 
 Higher priority wins:
 
@@ -42,18 +65,53 @@ Higher priority wins:
 
 This means human control can override autonomous navigation.
 
-## Timeouts
+Each source has a timeout. If a source stops publishing, `twist_mux` stops
+using it and falls back to the next active lower-priority source.
 
-Each input has:
+## Nav2 nodes launched
 
-```text
-timeout: 0.5
+`launch/nav2.launch.py` starts:
+
+- `planner_server`
+- `controller_server`
+- `velocity_smoother`
+- `smoother_server`
+- `behavior_server`
+- `bt_navigator`
+- `waypoint_follower`
+- `lifecycle_manager_navigation`
+
+It does not start AMCL or the map server. Use `amr_localisation` for that.
+
+## First Gazebo Nav2 test
+
+Terminal 1, launch simulation + AMCL + Nav2 + Nav2 RViz:
+
+```bash
+cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+ros2 launch amr_bringup sim_bringup.launch.py start_nav2:=true use_nav2_rviz:=true start_joy_teleop:=false
 ```
 
-If one source stops publishing for 0.5 s, `twist_mux` stops considering that
-source active and falls back to the next available lower-priority source.
+In RViz:
 
-## Launch twist_mux only
+1. Confirm Fixed Frame is `map`.
+2. Use **2D Pose Estimate** if the robot pose is wrong.
+3. Use **Nav2 Goal** to send a navigation goal.
+
+## Launch only the Nav2 navigation layer
+
+Use this only if Gazebo/real robot bringup and localization are already running:
+
+```bash
+cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+ros2 launch amr_navigation nav2.launch.py
+```
+
+## Launch only `twist_mux`
 
 ```bash
 cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
@@ -62,55 +120,26 @@ source install/setup.bash
 ros2 launch amr_navigation twist_mux.launch.py
 ```
 
-## Test in Gazebo
+## Key parameters
 
-The simulation bringup is wired so teleop publishes into mux input topics:
-
-```text
-keyboard -> /cmd_vel_keyboard
-joystick -> /cmd_vel_joy
-twist_mux -> /cmd_vel
-Gazebo -> subscribes /cmd_vel
-```
-
-Launch Gazebo with joystick teleop enabled:
-
-```bash
-cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
-source /opt/ros/humble/setup.bash
-source install/setup.bash
-ros2 launch amr_bringup sim_bringup.launch.py
-```
-
-For keyboard testing, it is usually better to run keyboard teleop in its own
-interactive terminal:
-
-Terminal 1:
-
-```bash
-cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
-source /opt/ros/humble/setup.bash
-source install/setup.bash
-ros2 launch amr_bringup sim_bringup.launch.py start_joy_teleop:=false
-```
-
-Terminal 2:
-
-```bash
-cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
-source /opt/ros/humble/setup.bash
-source install/setup.bash
-ros2 run amr_teleop keyboard_teleop --ros-args -r cmd_vel:=/cmd_vel_keyboard
-```
-
-## Future Nav2 connection
-
-When we add full Nav2, Nav2 should publish to:
+The main Nav2 tuning file is:
 
 ```text
-/cmd_vel_nav
+config/nav2_params.yaml
 ```
 
-not directly to `/cmd_vel`.
+Important early tuning values:
 
-Then `twist_mux` remains the final authority that publishes `/cmd_vel`.
+- `controller_server.controller_frequency`: how often local velocity commands
+  are computed.
+- `FollowPath.max_vel_x`: maximum forward speed from Nav2.
+- `FollowPath.max_vel_theta`: maximum turning speed from Nav2.
+- `FollowPath.acc_lim_x`: forward acceleration limit.
+- `FollowPath.acc_lim_theta`: angular acceleration limit.
+- `local_costmap.local_costmap.robot_radius`: safety radius for local obstacle
+  avoidance.
+- `global_costmap.global_costmap.robot_radius`: safety radius for global
+  planning.
+
+Start conservative. Once the robot reliably navigates in Gazebo, then tune
+speed, acceleration, inflation radius, and obstacle ranges.

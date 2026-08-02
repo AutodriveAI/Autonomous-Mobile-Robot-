@@ -67,11 +67,23 @@
         published topic  : /scan
         frame            : lidar_scan_link
 
+      Important frame detail:
+
+        The visual lidar body is lidar_link.  The real RPLidar's scan-front
+        direction is rotated 180 degrees from our robot's +X/front direction,
+        so lidar.xacro defines a rotated child frame called lidar_scan_link.
+
+        The Gazebo ray sensor must be attached to lidar_scan_link, not
+        lidar_link.  If the sensor is attached to lidar_link but the outgoing
+        LaserScan is merely labelled as lidar_scan_link, the scan data and TF
+        disagree by 180 degrees.  RViz then shows the scan mirrored/opposite to
+        the robot front, which breaks mapping/localization/navigation.
+
       visualize=false keeps Gazebo from drawing all laser rays in the 3D scene.
       The sensor still publishes /scan; only the blue/yellow ray debug overlay
       is hidden.
     -->
-    <gazebo reference="lidar_link">
+    <gazebo reference="lidar_scan_link">
       <sensor name="rplidar_c1" type="ray">
         <always_on>true</always_on>
         <visualize>false</visualize>

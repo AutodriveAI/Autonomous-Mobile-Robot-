@@ -17,7 +17,9 @@
   -->
 
   <xacro:property name="body_collision_radius" value="0.10" />
-  <xacro:property name="body_collision_height" value="0.21" />
+  <xacro:property name="body_collision_height" value="0.13" />
+  <xacro:property name="body_collision_center_z" value="0.085" />
+  <xacro:property name="body_inertial_height" value="0.21" />
   <xacro:property name="wheel_collision_radius" value="0.035" />
   <xacro:property name="wheel_collision_width" value="0.04" />
   <xacro:property name="antenna_collision_radius" value="0.02" />
@@ -74,9 +76,9 @@
   <xacro:macro name="amr_robot_core">
   <link name="base_link" />
   <link name="chassis_link">
-    <xacro:vertical_cylinder_inertial mass="2.5" radius="${body_collision_radius}" height="${body_collision_height}" xyz="0.025 0 0.0906" />
+    <xacro:vertical_cylinder_inertial mass="2.5" radius="${body_collision_radius}" height="${body_inertial_height}" xyz="0.025 0 0.0906" />
     <collision>
-      <origin xyz="0.025 0 0.0906" rpy="0 0 0" />
+      <origin xyz="0.025 0 ${body_collision_center_z}" rpy="0 0 0" />
       <geometry>
         <cylinder radius="${body_collision_radius}" length="${body_collision_height}" />
       </geometry>

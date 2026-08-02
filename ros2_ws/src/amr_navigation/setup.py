@@ -14,9 +14,12 @@ setup(
         ]),
         ('share/' + package_name + '/launch', [
             'launch/twist_mux.launch.py',
+            'launch/nav2.launch.py',
         ]),
         ('share/' + package_name + '/config', [
             'config/twist_mux.yaml',
+            'config/nav2_params.yaml',
+            'config/nav2_params_real.yaml',
         ]),
     ],
     install_requires=['setuptools'],

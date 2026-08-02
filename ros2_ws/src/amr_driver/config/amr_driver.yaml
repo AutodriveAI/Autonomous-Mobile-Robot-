@@ -27,3 +27,10 @@ amr_driver_node:
     # Absolute ROS-side target limit. With the current 20-tick wheel encoder,
     # 200 ticks/s is about 10 wheel revolutions/s.
     max_ticks_per_second: 200.0
+
+    # Keep disabled during Nav2 debugging. We want to see the command produced
+    # by controller_server / velocity_smoother / twist_mux, not a compensated
+    # command invented by amr_driver.
+    min_nonzero_ticks_per_second: 0.0
+    refresh_nonzero_commands: false
+    refresh_log_interval_s: 1.0

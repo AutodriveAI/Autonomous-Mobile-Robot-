@@ -16,13 +16,21 @@ def generate_launch_description():
         default_value=default_config,
         description='Path to the amr_driver parameter YAML file',
     )
+    cmd_vel_topic_arg = DeclareLaunchArgument(
+        'cmd_vel_topic',
+        default_value='cmd_vel',
+        description='Velocity command topic consumed by amr_driver.',
+    )
 
     amr_driver_node = Node(
         package='amr_driver',
         executable='amr_driver_node',
         name='amr_driver_node',
         output='screen',
-        parameters=[LaunchConfiguration('config_file')],
+        parameters=[
+            LaunchConfiguration('config_file'),
+            {'cmd_vel_topic': LaunchConfiguration('cmd_vel_topic')},
+        ],
     )
 
-    return LaunchDescription([config_arg, amr_driver_node])
+    return LaunchDescription([config_arg, cmd_vel_topic_arg, amr_driver_node])
