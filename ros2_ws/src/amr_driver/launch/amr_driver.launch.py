@@ -27,6 +27,9 @@ def generate_launch_description():
         executable='amr_driver_node',
         name='amr_driver_node',
         output='screen',
+        remappings=[
+            ('cmd_vel', LaunchConfiguration('cmd_vel_topic')),
+        ],
         parameters=[
             LaunchConfiguration('config_file'),
             {'cmd_vel_topic': LaunchConfiguration('cmd_vel_topic')},

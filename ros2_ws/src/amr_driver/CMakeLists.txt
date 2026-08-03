@@ -16,6 +16,12 @@ add_library(amr_driver_stm32_hardware SHARED
   src/stm32_system.cpp
 )
 
+target_compile_features(amr_driver_stm32_hardware PUBLIC cxx_std_17)
+
+if("$ENV{ROS_DISTRO}" STREQUAL "foxy")
+  target_compile_definitions(amr_driver_stm32_hardware PRIVATE AMR_DRIVER_ROS2_CONTROL_FOXY)
+endif()
+
 target_include_directories(amr_driver_stm32_hardware PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>

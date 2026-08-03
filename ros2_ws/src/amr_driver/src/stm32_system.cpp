@@ -47,6 +47,16 @@ namespace
 
 constexpr const char * LOGGER_NAME = "amr_driver.STM32SystemHardware";
 
+#ifdef AMR_DRIVER_ROS2_CONTROL_FOXY
+using lifecycle_return_type = hardware_interface::return_type;
+constexpr auto LIFECYCLE_SUCCESS = hardware_interface::return_type::OK;
+constexpr auto LIFECYCLE_ERROR = hardware_interface::return_type::ERROR;
+#else
+using lifecycle_return_type = hardware_interface::CallbackReturn;
+constexpr auto LIFECYCLE_SUCCESS = hardware_interface::CallbackReturn::SUCCESS;
+constexpr auto LIFECYCLE_ERROR = hardware_interface::CallbackReturn::ERROR;
+#endif
+
 // Read an integer parameter from the <hardware> section of ros2_control.xacro.
 //
 // Example in xacro:
@@ -96,16 +106,25 @@ speed_t baud_to_termios_constant(int baud_rate)
 
 }  // namespace
 
-hardware_interface::CallbackReturn STM32SystemHardware::on_init(
+#ifdef AMR_DRIVER_ROS2_CONTROL_FOXY
+lifecycle_return_type STM32SystemHardware::configure(
+#else
+lifecycle_return_type STM32SystemHardware::on_init(
+#endif
   const hardware_interface::HardwareInfo & info)
 {
   // Let the base ros2_control SystemInterface parse and store the URDF
   // hardware information first. This fills info_, including the joint names,
   // command interfaces, state interfaces, and hardware parameters.
+#ifdef AMR_DRIVER_ROS2_CONTROL_FOXY
+  if (hardware_interface::BaseInterface<hardware_interface::SystemInterface>::configure(info) !=
+    hardware_interface::return_type::OK)
+#else
   if (hardware_interface::SystemInterface::on_init(info) !=
     hardware_interface::CallbackReturn::SUCCESS)
+#endif
   {
-    return hardware_interface::CallbackReturn::ERROR;
+    return LIFECYCLE_ERROR;
   }
 
   // Our AMR base has exactly two controllable joints:
@@ -120,7 +139,7 @@ hardware_interface::CallbackReturn STM32SystemHardware::on_init(
       rclcpp::get_logger(LOGGER_NAME),
       "Expected exactly 2 joints, got %zu",
       info_.joints.size());
-    return hardware_interface::CallbackReturn::ERROR;
+    return LIFECYCLE_ERROR;
   }
 
   // Validate the interface shape of each wheel joint.
@@ -145,7 +164,7 @@ hardware_interface::CallbackReturn STM32SystemHardware::on_init(
         rclcpp::get_logger(LOGGER_NAME),
         "Joint '%s' must have exactly one velocity command_interface",
         joint.name.c_str());
-      return hardware_interface::CallbackReturn::ERROR;
+      return LIFECYCLE_ERROR;
     }
 
     if (joint.state_interfaces.size() != 2) {
@@ -153,7 +172,7 @@ hardware_interface::CallbackReturn STM32SystemHardware::on_init(
         rclcpp::get_logger(LOGGER_NAME),
         "Joint '%s' must have position and velocity state_interfaces",
         joint.name.c_str());
-      return hardware_interface::CallbackReturn::ERROR;
+      return LIFECYCLE_ERROR;
     }
   }
 
@@ -170,7 +189,7 @@ hardware_interface::CallbackReturn STM32SystemHardware::on_init(
   // impossible, so fail early instead of producing nonsense odometry.
   if (ticks_per_revolution_ <= 0) {
     RCLCPP_ERROR(rclcpp::get_logger(LOGGER_NAME), "ticks_per_revolution must be positive");
-    return hardware_interface::CallbackReturn::ERROR;
+    return LIFECYCLE_ERROR;
   }
 
   // Regex for parsing the current STM32 telemetry line.
@@ -194,7 +213,7 @@ hardware_interface::CallbackReturn STM32SystemHardware::on_init(
     "Configured STM32 hardware: port=%s baud=%d ticks/rev=%d max_ticks/s=%d",
     serial_port_.c_str(), baud_rate_, ticks_per_revolution_, max_ticks_per_second_);
 
-  return hardware_interface::CallbackReturn::SUCCESS;
+  return LIFECYCLE_SUCCESS;
 }
 
 std::vector<hardware_interface::StateInterface>
@@ -234,8 +253,12 @@ STM32SystemHardware::export_command_interfaces()
   return command_interfaces;
 }
 
-hardware_interface::CallbackReturn STM32SystemHardware::on_activate(
+#ifdef AMR_DRIVER_ROS2_CONTROL_FOXY
+lifecycle_return_type STM32SystemHardware::start()
+#else
+lifecycle_return_type STM32SystemHardware::on_activate(
   const rclcpp_lifecycle::State &)
+#endif
 {
   // Reset command and feedback memory whenever the hardware interface is
   // activated. Activation normally happens when controller_manager starts this
@@ -257,32 +280,44 @@ hardware_interface::CallbackReturn STM32SystemHardware::on_activate(
   // That matches ros2_control lifecycle behavior and lets configuration fail
   // cleanly before touching hardware.
   if (!open_serial_port()) {
-    return hardware_interface::CallbackReturn::ERROR;
+    return LIFECYCLE_ERROR;
   }
 
   RCLCPP_INFO(
     rclcpp::get_logger(LOGGER_NAME),
     "Activated STM32 hardware interface on %s @ %d baud",
     serial_port_.c_str(), baud_rate_);
-  return hardware_interface::CallbackReturn::SUCCESS;
+  return LIFECYCLE_SUCCESS;
 }
 
-hardware_interface::CallbackReturn STM32SystemHardware::on_deactivate(
+#ifdef AMR_DRIVER_ROS2_CONTROL_FOXY
+lifecycle_return_type STM32SystemHardware::stop()
+#else
+lifecycle_return_type STM32SystemHardware::on_deactivate(
   const rclcpp_lifecycle::State &)
+#endif
 {
   // On shutdown/deactivation, command both wheels to zero before closing the
   // port. This mirrors the safety idea used in the STM32 firmware: if the ROS
   // side stops, the robot should not keep driving.
   left_command_rad_per_sec_ = 0.0;
   right_command_rad_per_sec_ = 0.0;
+#ifdef AMR_DRIVER_ROS2_CONTROL_FOXY
+  write();
+#else
   write(rclcpp::Time{}, rclcpp::Duration::from_seconds(0.0));
+#endif
   close_serial_port();
-  return hardware_interface::CallbackReturn::SUCCESS;
+  return LIFECYCLE_SUCCESS;
 }
 
+#ifdef AMR_DRIVER_ROS2_CONTROL_FOXY
+hardware_interface::return_type STM32SystemHardware::read()
+#else
 hardware_interface::return_type STM32SystemHardware::read(
   const rclcpp::Time &,
   const rclcpp::Duration &)
+#endif
 {
   // ros2_control calls read() periodically.
   //
@@ -321,9 +356,13 @@ hardware_interface::return_type STM32SystemHardware::read(
   }
 }
 
+#ifdef AMR_DRIVER_ROS2_CONTROL_FOXY
+hardware_interface::return_type STM32SystemHardware::write()
+#else
 hardware_interface::return_type STM32SystemHardware::write(
   const rclcpp::Time &,
   const rclcpp::Duration &)
+#endif
 {
   // ros2_control calls write() periodically after controllers update commands.
   //

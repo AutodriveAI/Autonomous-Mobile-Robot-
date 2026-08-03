@@ -19,6 +19,7 @@ ticks/s telemetry.
 """
 
 import rclpy
+import threading
 from geometry_msgs.msg import Twist, TransformStamped
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
@@ -65,6 +66,10 @@ class AmrDriverNode(Node):
         # V,0,0 has been sent, sending the same stop command again only clogs
         # the serial link and hides useful replies/telemetry.
         self._last_sent_velocity_command = None
+        self._state_lock = threading.Lock()
+        self._latest_linear_velocity = 0.0
+        self._latest_angular_velocity = 0.0
+        self._has_telemetry = False
 
         # Keep robot geometry and pose integration outside this ROS-facing
         # class. That makes the mathematical parts independently testable.
@@ -76,6 +81,10 @@ class AmrDriverNode(Node):
         # avoids retransmitting stale odometry if a message is missed.
         best_effort_qos = QoSProfile(
             depth=10, reliability=QoSReliabilityPolicy.BEST_EFFORT)
+        # robot_state_publisher subscribes to /joint_states with reliable QoS,
+        # so the driver must offer reliable samples for wheel link TF updates.
+        joint_state_qos = QoSProfile(
+            depth=10, reliability=QoSReliabilityPolicy.RELIABLE)
         # Velocity commands are state, not a history to replay. If several
         # arrive before this callback runs, discard the older ones and retain
         # only the newest desired robot motion.
@@ -87,7 +96,7 @@ class AmrDriverNode(Node):
         self._odom_pub = self.create_publisher(
             Odometry, p['odom_topic'], best_effort_qos)
         self._joint_state_pub = self.create_publisher(
-            JointState, 'joint_states', best_effort_qos)
+            JointState, 'joint_states', joint_state_qos)
         self._tf_broadcaster = (
             TransformBroadcaster(self) if p['publish_tf'] else None)
 
@@ -104,6 +113,10 @@ class AmrDriverNode(Node):
         # This timer continually refreshes the STM32's command watchdog.
         period_s = 1.0 / p['publish_rate_hz']
         self._command_timer = self.create_timer(period_s, self._command_timer_callback)
+        # Publish ROS-facing odometry, TF, and joint states from the executor
+        # thread. Foxy/rclpy can behave poorly when TF and reliable joint-state
+        # samples are published directly from the serial reader thread.
+        self._state_timer = self.create_timer(period_s, self._state_timer_callback)
 
         self.get_logger().info(
             f"amr_driver connected on {p['serial_port']} @ {p['baud_rate']} baud"
@@ -113,7 +126,7 @@ class AmrDriverNode(Node):
 
     def _declare_parameters(self) -> None:
         """Declare every launch/YAML configurable value with a safe default."""
-        self.declare_parameter('serial_port', '/dev/ttyUSB0')
+        self.declare_parameter('serial_port', '/dev/stm32')
         self.declare_parameter('baud_rate', 115200)
         self.declare_parameter('cmd_vel_topic', 'cmd_vel')
         self.declare_parameter('odom_topic', 'odom')
@@ -215,9 +228,15 @@ class AmrDriverNode(Node):
         return minimum if ticks > 0.0 else -minimum
 
     def _command_timer_callback(self) -> None:
-        """Refresh the MCU command or send a stop after cmd_vel goes stale."""
+        """Refresh the MCU command or stop after cmd_vel goes stale.
+
+        A non-positive timeout disables the ROS-side watchdog. In that mode,
+        the active command remains under the cmd_vel publisher's control and
+        the STM32 firmware timeout remains the final communication failsafe.
+        """
         elapsed = (self.get_clock().now() - self._last_cmd_vel_time).nanoseconds / 1e9
-        if elapsed > self._p['cmd_vel_timeout_s']:
+        timeout = float(self._p['cmd_vel_timeout_s'])
+        if timeout > 0.0 and elapsed > timeout:
             # No fresh cmd_vel recently: fail safe rather than trust the
             # firmware's currently much longer 10 s timeout.
             self._send_velocity_command(0, 0)
@@ -267,12 +286,22 @@ class AmrDriverNode(Node):
 
     def _on_telemetry(self, telemetry: Telemetry) -> None:
         # NOTE: runs on the Stm32Transport reader thread, not the executor thread.
-        # rclpy Publisher.publish() and TransformBroadcaster.sendTransform()
-        # are safe to call directly from another thread.
         state = self._odometry.update(
             telemetry.left_ticks, telemetry.right_ticks,
             telemetry.time_ms, telemetry.stamp)
-        self._publish_odometry(state.linear_velocity, state.angular_velocity)
+        with self._state_lock:
+            self._latest_linear_velocity = state.linear_velocity
+            self._latest_angular_velocity = state.angular_velocity
+            self._has_telemetry = True
+
+    def _state_timer_callback(self) -> None:
+        """Publish the latest robot state from the ROS executor thread."""
+        with self._state_lock:
+            if not self._has_telemetry:
+                return
+            linear_v = self._latest_linear_velocity
+            angular_v = self._latest_angular_velocity
+        self._publish_odometry(linear_v, angular_v)
         self._publish_joint_states()
 
     def _publish_odometry(self, linear_v: float, angular_v: float) -> None:

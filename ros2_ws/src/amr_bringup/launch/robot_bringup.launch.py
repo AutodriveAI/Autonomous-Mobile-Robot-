@@ -86,6 +86,7 @@ def generate_launch_description():
     use_nav2_rviz = LaunchConfiguration('use_nav2_rviz')
     bypass_twist_mux = LaunchConfiguration('bypass_twist_mux')
     config_file = LaunchConfiguration('config_file')
+    twist_mux_config_file = LaunchConfiguration('twist_mux_config_file')
     map_file = LaunchConfiguration('map')
     nav2_params_file = LaunchConfiguration('nav2_params_file')
     lidar_serial_port = LaunchConfiguration('lidar_serial_port')
@@ -150,6 +151,7 @@ def generate_launch_description():
             os.path.join(amr_navigation_share, 'launch', 'twist_mux.launch.py')
         ),
         launch_arguments={
+            'config_file': twist_mux_config_file,
             'output_topic': '/cmd_vel',
         }.items(),
         condition=UnlessCondition(bypass_twist_mux),
@@ -289,6 +291,11 @@ def generate_launch_description():
             description='Path to the amr_driver parameter YAML file.',
         ),
         DeclareLaunchArgument(
+            'twist_mux_config_file',
+            default_value=os.path.join(amr_navigation_share, 'config', 'twist_mux.yaml'),
+            description='Path to the twist_mux parameter YAML file.',
+        ),
+        DeclareLaunchArgument(
             'map',
             default_value=os.path.join(
                 amr_slam_share,
@@ -304,7 +311,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             'lidar_serial_port',
-            default_value='/dev/ttyUSB0',
+            default_value='/dev/rplidar',
             description='Linux device path for the physical RPLidar.',
         ),
         DeclareLaunchArgument(

@@ -17,64 +17,37 @@ bt_navigator:
     bt_loop_duration: 10
     default_server_timeout: 20
     wait_for_service_timeout: 1000
+    enable_groot_monitoring: false
+    default_bt_xml_filename: "/opt/ros/foxy/share/nav2_bt_navigator/behavior_trees/navigate_w_replanning_and_recovery.xml"
 
-    # These are the standard behavior-tree plugin libraries used by Nav2
-    # Humble. They let the BT Navigator call planner, controller, recovery,
-    # wait, spin, backup, and goal-management behaviors.
+    # Foxy-compatible behavior-tree plugin libraries.
     plugin_lib_names:
       - nav2_compute_path_to_pose_action_bt_node
-      - nav2_compute_path_through_poses_action_bt_node
-      - nav2_smooth_path_action_bt_node
       - nav2_follow_path_action_bt_node
+      - nav2_back_up_action_bt_node
       - nav2_spin_action_bt_node
       - nav2_wait_action_bt_node
-      - nav2_assisted_teleop_action_bt_node
-      - nav2_back_up_action_bt_node
-      - nav2_drive_on_heading_bt_node
       - nav2_clear_costmap_service_bt_node
       - nav2_is_stuck_condition_bt_node
       - nav2_goal_reached_condition_bt_node
       - nav2_goal_updated_condition_bt_node
-      - nav2_globally_updated_goal_condition_bt_node
-      - nav2_is_path_valid_condition_bt_node
       - nav2_initial_pose_received_condition_bt_node
       - nav2_reinitialize_global_localization_service_bt_node
       - nav2_rate_controller_bt_node
       - nav2_distance_controller_bt_node
       - nav2_speed_controller_bt_node
       - nav2_truncate_path_action_bt_node
-      - nav2_truncate_path_local_action_bt_node
       - nav2_goal_updater_node_bt_node
       - nav2_recovery_node_bt_node
       - nav2_pipeline_sequence_bt_node
       - nav2_round_robin_node_bt_node
       - nav2_transform_available_condition_bt_node
       - nav2_time_expired_condition_bt_node
-      - nav2_path_expiring_timer_condition
       - nav2_distance_traveled_condition_bt_node
-      - nav2_single_trigger_bt_node
-      - nav2_goal_updated_controller_bt_node
       - nav2_is_battery_low_condition_bt_node
-      - nav2_navigate_through_poses_action_bt_node
       - nav2_navigate_to_pose_action_bt_node
-      - nav2_remove_passed_goals_action_bt_node
-      - nav2_planner_selector_bt_node
-      - nav2_controller_selector_bt_node
-      - nav2_goal_checker_selector_bt_node
-      - nav2_controller_cancel_bt_node
-      - nav2_path_longer_on_approach_bt_node
-      - nav2_wait_cancel_bt_node
-      - nav2_spin_cancel_bt_node
-      - nav2_back_up_cancel_bt_node
-      - nav2_assisted_teleop_cancel_bt_node
-      - nav2_drive_on_heading_cancel_bt_node
-      - nav2_is_battery_charging_condition_bt_node
 
-bt_navigator_navigate_through_poses_rclcpp_node:
-  ros__parameters:
-    use_sim_time: true
-
-bt_navigator_navigate_to_pose_rclcpp_node:
+bt_navigator_rclcpp_node:
   ros__parameters:
     use_sim_time: true
 
@@ -83,9 +56,9 @@ controller_server:
     use_sim_time: true
 
     # How often Nav2's local controller computes a new velocity command.
-    # 20 Hz is normal for small differential-drive robots and matches our
-    # existing command/update rhythm well.
-    controller_frequency: 20.0
+    # The Jetson Nano can miss 20 Hz cycles with AMCL, costmaps, lidar, and
+    # DWB running together, so use 10 Hz for the physical robot bringup.
+    controller_frequency: 10.0
 
     # Small values below these thresholds are treated as zero.
     min_x_velocity_threshold: 0.001
@@ -97,7 +70,7 @@ controller_server:
     failure_tolerance: 0.3
 
     progress_checker_plugin: progress_checker
-    goal_checker_plugins: ["general_goal_checker"]
+    goal_checker_plugin: "goal_checker"
     controller_plugins: ["FollowPath"]
 
     progress_checker:
@@ -105,7 +78,7 @@ controller_server:
       required_movement_radius: 0.15
       movement_time_allowance: 10.0
 
-    general_goal_checker:
+    goal_checker:
       plugin: nav2_controller::SimpleGoalChecker
       stateful: true
       xy_goal_tolerance: 0.15
@@ -124,18 +97,20 @@ controller_server:
       #   0.25 m/s  -> about V,24,24
       #   0.60 m/s  -> about V,59,59
       #   1.00 m/s  -> about V,98,98
+      #   1.2252 m/s -> V,120,120 (maximum translation)
       #   1.00 rad/s turn -> about V,-9,9
       #   5.00 rad/s turn -> about V,-43,43
+      #   11.50 rad/s turn -> about V,-99,99
+      #   11.6688 rad/s turn -> V,-100,100 (maximum rotation)
       #
-      # The robot starts moving reliably closer to V,100,100, so the real
-      # profile needs higher command limits than the Gazebo profile. This is
-      # not saying the robot should always drive fast; it only gives Nav2
-      # enough command authority to overcome the present motor/PID deadband.
+      # Keep a useful physical command range instead of forcing every nonzero
+      # correction to the maximum. The former near-identical minimum/maximum
+      # values made DWB alternate between full-speed left and right turns.
       min_vel_x: 0.0
-      max_vel_x: 1.20
+      max_vel_x: 1.2252211349
       min_vel_y: 0.0
       max_vel_y: 0.0
-      max_vel_theta: 12.0
+      max_vel_theta: 11.6687727133
 
       # Physical robot minimum useful command.
       #
@@ -144,26 +119,25 @@ controller_server:
       # this, Nav2 can repeatedly publish tiny velocities that are valid in
       # math but too weak to move the real drivetrain.
       min_speed_xy: 0.60
-      max_speed_xy: 1.20
+      max_speed_xy: 1.2252211349
 
-      # Same idea for in-place rotation. Your real robot needs roughly this
-      # angular command before the turn is physically meaningful.
-      min_speed_theta: 5.0
+      # About V,-60,60: above the previously ineffective V,-30,30 command but
+      # sufficiently below the V,-100,100 maximum for heading corrections.
+      min_speed_theta: 7.0
 
-      # Real robot profile: allow commands to climb quickly enough that Nav2
-      # can reach useful wheel tick targets, while velocity_smoother still
-      # prevents instant jumps.
-      acc_lim_x: 3.0
+      # Softer acceleration prevents a correction from immediately becoming
+      # a maximum command and reduces overshoot when its sign changes.
+      acc_lim_x: 1.5
       acc_lim_y: 0.0
-      acc_lim_theta: 12.0
-      decel_lim_x: -3.0
+      acc_lim_theta: 8.0
+      decel_lim_x: -1.5
       decel_lim_y: 0.0
-      decel_lim_theta: -12.0
+      decel_lim_theta: -8.0
 
       # DWB samples many candidate velocities and scores them.
-      vx_samples: 20
+      vx_samples: 10
       vy_samples: 1
-      vtheta_samples: 20
+      vtheta_samples: 10
       sim_time: 1.7
       linear_granularity: 0.05
       angular_granularity: 0.025
@@ -307,33 +281,29 @@ smoother_server:
       max_its: 1000
       do_refinement: true
 
-behavior_server:
+recoveries_server:
   ros__parameters:
     use_sim_time: true
     global_frame: odom
     robot_base_frame: base_link
-    transform_tolerance: 0.1
+    transform_timeout: 0.1
 
     costmap_topic: local_costmap/costmap_raw
     footprint_topic: local_costmap/published_footprint
     cycle_frequency: 10.0
 
-    behavior_plugins: ["spin", "backup", "drive_on_heading", "assisted_teleop", "wait"]
+    recovery_plugins: ["spin", "back_up", "wait"]
     spin:
-      plugin: nav2_behaviors/Spin
-    backup:
-      plugin: nav2_behaviors/BackUp
-    drive_on_heading:
-      plugin: nav2_behaviors/DriveOnHeading
-    assisted_teleop:
-      plugin: nav2_behaviors/AssistedTeleop
+      plugin: nav2_recoveries/Spin
+    back_up:
+      plugin: nav2_recoveries/BackUp
     wait:
-      plugin: nav2_behaviors/Wait
+      plugin: nav2_recoveries/Wait
 
     simulate_ahead_time: 2.0
-    max_rotational_vel: 4.0
-    min_rotational_vel: 0.2
-    rotational_acc_lim: 4.0
+    max_rotational_vel: 11.6687727133
+    min_rotational_vel: 7.0
+    rotational_acc_lim: 8.0
 
 waypoint_follower:
   ros__parameters:
@@ -356,10 +326,10 @@ velocity_smoother:
     scale_velocities: false
     feedback: OPEN_LOOP
 
-    max_velocity: [1.20, 0.0, 12.0]
-    min_velocity: [-1.20, 0.0, -12.0]
-    max_accel: [3.0, 0.0, 12.0]
-    max_decel: [-3.0, 0.0, -12.0]
+    max_velocity: [1.2252211349, 0.0, 11.6687727133]
+    min_velocity: [-1.2252211349, 0.0, -11.6687727133]
+    max_accel: [1.5, 0.0, 8.0]
+    max_decel: [-1.5, 0.0, -8.0]
 
     odom_topic: /odom
     odom_duration: 0.1

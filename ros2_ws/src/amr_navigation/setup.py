@@ -21,6 +21,9 @@ setup(
             'config/nav2_params.yaml',
             'config/nav2_params_real.yaml',
         ]),
+        ('share/' + package_name + '/behavior_trees', [
+            'behavior_trees/navigate_w_slow_replanning_and_recovery.xml',
+        ]),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

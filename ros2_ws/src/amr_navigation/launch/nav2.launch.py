@@ -6,7 +6,6 @@ from launch.actions import DeclareLaunchArgument, SetEnvironmentVariable
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from launch_ros.descriptions import ParameterFile
 from nav2_common.launch import RewrittenYaml
 
 
@@ -34,40 +33,48 @@ def generate_launch_description():
     autostart = LaunchConfiguration('autostart')
     use_rviz = LaunchConfiguration('use_rviz')
     rviz_config = LaunchConfiguration('rviz_config')
+    bt_xml_file = LaunchConfiguration('bt_xml_file')
     log_level = LaunchConfiguration('log_level')
+    is_foxy = os.environ.get('ROS_DISTRO') == 'foxy'
 
     # Nav2's lifecycle manager brings these managed nodes from "unconfigured"
     # to "active" automatically when autostart is true.
-    lifecycle_nodes = [
-        'controller_server',
-        'smoother_server',
-        'planner_server',
-        'behavior_server',
-        'bt_navigator',
-        'waypoint_follower',
-        'velocity_smoother',
-    ]
+    if is_foxy:
+        lifecycle_nodes = [
+            'controller_server',
+            'planner_server',
+            'recoveries_server',
+            'bt_navigator',
+            'waypoint_follower',
+        ]
+    else:
+        lifecycle_nodes = [
+            'controller_server',
+            'smoother_server',
+            'planner_server',
+            'behavior_server',
+            'bt_navigator',
+            'waypoint_follower',
+            'velocity_smoother',
+        ]
 
-    # Nav2's default launch file uses relative tf remaps for multi-robot
-    # support. We keep the same convention here.
-    remappings = [
-        ('/tf', 'tf'),
-        ('/tf_static', 'tf_static'),
-    ]
+    # Single-robot physical bringup: use the global /tf and /tf_static topics
+    # directly. Relative TF remaps can make nested costmap nodes listen on
+    # namespaced topics such as /global_costmap/tf, leaving them unable to see
+    # map/odom/base_link even though standalone tf2_echo can.
+    remappings = []
 
     # RewrittenYaml lets launch arguments override values inside the YAML file
     # without maintaining separate "simulation" and "real robot" YAML copies.
-    configured_params = ParameterFile(
-        RewrittenYaml(
-            source_file=params_file,
-            root_key='',
-            param_rewrites={
-                'use_sim_time': use_sim_time,
-                'autostart': autostart,
-            },
-            convert_types=True,
-        ),
-        allow_substs=True,
+    configured_params = RewrittenYaml(
+        source_file=params_file,
+        root_key='',
+        param_rewrites={
+            'use_sim_time': use_sim_time,
+            'autostart': autostart,
+            'default_bt_xml_filename': bt_xml_file,
+        },
+        convert_types=True,
     )
 
     controller_server = Node(
@@ -77,8 +84,9 @@ def generate_launch_description():
         parameters=[configured_params],
         arguments=['--ros-args', '--log-level', log_level],
         remappings=remappings + [
-            # Raw local-controller output goes into the velocity smoother first.
-            ('cmd_vel', 'cmd_vel_nav_raw'),
+            # Humble smooths raw controller output. Foxy has no velocity_smoother,
+            # so send Nav2's candidate command directly to twist_mux.
+            ('cmd_vel', 'cmd_vel_nav' if is_foxy else 'cmd_vel_nav_raw'),
         ],
     )
 
@@ -103,13 +111,15 @@ def generate_launch_description():
     )
 
     behavior_server = Node(
-        package='nav2_behaviors',
-        executable='behavior_server',
-        name='behavior_server',
+        package='nav2_recoveries' if is_foxy else 'nav2_behaviors',
+        executable='recoveries_server' if is_foxy else 'behavior_server',
+        name='recoveries_server' if is_foxy else 'behavior_server',
         output='screen',
         parameters=[configured_params],
         arguments=['--ros-args', '--log-level', log_level],
-        remappings=remappings,
+        remappings=remappings + (
+            [('cmd_vel', 'cmd_vel_nav')] if is_foxy else []
+        ),
     )
 
     bt_navigator = Node(
@@ -202,17 +212,29 @@ def generate_launch_description():
             description='RViz config used for Nav2 goal setting and monitoring.',
         ),
         DeclareLaunchArgument(
+            'bt_xml_file',
+            default_value=os.path.join(
+                package_share,
+                'behavior_trees',
+                'navigate_w_slow_replanning_and_recovery.xml',
+            ),
+            description=(
+                'Behavior tree XML. The default keeps recovery behavior but '
+                'slows replanning to once every 20 seconds for Jetson bringup.'
+            ),
+        ),
+        DeclareLaunchArgument(
             'log_level',
             default_value='info',
             description='Nav2 node log level.',
         ),
         controller_server,
-        smoother_server,
+        *([] if is_foxy else [smoother_server]),
         planner_server,
         behavior_server,
         bt_navigator,
         waypoint_follower,
-        velocity_smoother,
+        *([] if is_foxy else [velocity_smoother]),
         lifecycle_manager,
         rviz,
     ])

@@ -8,24 +8,48 @@
 #include "hardware_interface/hardware_info.hpp"
 #include "hardware_interface/system_interface.hpp"
 #include "hardware_interface/types/hardware_interface_return_values.hpp"
+#ifdef AMR_DRIVER_ROS2_CONTROL_FOXY
+#include "hardware_interface/base_interface.hpp"
+#else
 #include "rclcpp/macros.hpp"
+#endif
+#include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/state.hpp"
 
 namespace amr_driver
 {
 
-class STM32SystemHardware : public hardware_interface::SystemInterface
+class STM32SystemHardware :
+#ifdef AMR_DRIVER_ROS2_CONTROL_FOXY
+  public hardware_interface::BaseInterface<hardware_interface::SystemInterface>
+#else
+  public hardware_interface::SystemInterface
+#endif
 {
 public:
   RCLCPP_SHARED_PTR_DEFINITIONS(STM32SystemHardware)
 
+#ifdef AMR_DRIVER_ROS2_CONTROL_FOXY
+  hardware_interface::return_type configure(
+    const hardware_interface::HardwareInfo & info) override;
+#else
   hardware_interface::CallbackReturn on_init(
     const hardware_interface::HardwareInfo & info) override;
+#endif
 
   std::vector<hardware_interface::StateInterface> export_state_interfaces() override;
 
   std::vector<hardware_interface::CommandInterface> export_command_interfaces() override;
 
+#ifdef AMR_DRIVER_ROS2_CONTROL_FOXY
+  hardware_interface::return_type start() override;
+
+  hardware_interface::return_type stop() override;
+
+  hardware_interface::return_type read() override;
+
+  hardware_interface::return_type write() override;
+#else
   hardware_interface::CallbackReturn on_activate(
     const rclcpp_lifecycle::State & previous_state) override;
 
@@ -39,6 +63,7 @@ public:
   hardware_interface::return_type write(
     const rclcpp::Time & time,
     const rclcpp::Duration & period) override;
+#endif
 
 private:
   bool open_serial_port();
@@ -50,7 +75,7 @@ private:
   double ticks_to_radians(long long ticks) const;
   double ticks_per_sec_to_rad_per_sec(int ticks_per_sec) const;
 
-  std::string serial_port_{"/dev/ttyACM0"};
+  std::string serial_port_{"/dev/stm32"};
   int baud_rate_{115200};
   int ticks_per_revolution_{20};
   int max_ticks_per_second_{200};

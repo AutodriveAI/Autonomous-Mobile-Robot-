@@ -40,7 +40,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             'serial_port',
-            default_value='/dev/ttyUSB0',
+            default_value='/dev/rplidar',
             description='Linux device path for the physical RPLidar USB adapter.',
         ),
         DeclareLaunchArgument(

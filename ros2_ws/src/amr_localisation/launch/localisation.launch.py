@@ -33,6 +33,7 @@ def generate_launch_description():
 
     map_yaml = LaunchConfiguration('map')
     amcl_params_file = LaunchConfiguration('amcl_params_file')
+    robot_model_type = LaunchConfiguration('robot_model_type')
     use_sim_time = LaunchConfiguration('use_sim_time')
     scan_topic = LaunchConfiguration('scan_topic')
     use_rviz = LaunchConfiguration('use_rviz')
@@ -46,7 +47,7 @@ def generate_launch_description():
         parameters=[
             amcl_params_file,
             {
-                'yaml_filename': map_yaml,
+                'yaml_filename': ParameterValue(map_yaml, value_type=str),
                 'use_sim_time': ParameterValue(use_sim_time, value_type=bool),
             },
         ],
@@ -62,6 +63,7 @@ def generate_launch_description():
             {
                 'use_sim_time': ParameterValue(use_sim_time, value_type=bool),
                 'scan_topic': scan_topic,
+                'robot_model_type': ParameterValue(robot_model_type, value_type=str),
             },
         ],
         remappings=[
@@ -107,6 +109,15 @@ def generate_launch_description():
             'amcl_params_file',
             default_value=os.path.join(package_share, 'config', 'amcl.yaml'),
             description='AMCL and map server parameter file.',
+        ),
+        DeclareLaunchArgument(
+            'robot_model_type',
+            default_value=(
+                'differential'
+                if os.environ.get('ROS_DISTRO') == 'foxy'
+                else 'nav2_amcl::DifferentialMotionModel'
+            ),
+            description='AMCL differential-drive motion model plugin identifier.',
         ),
         DeclareLaunchArgument(
             'use_sim_time',
