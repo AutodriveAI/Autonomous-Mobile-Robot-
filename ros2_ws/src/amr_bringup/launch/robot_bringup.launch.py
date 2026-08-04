@@ -77,13 +77,12 @@ def _select_rviz(context):
 
 
 def generate_launch_description():
-    use_rviz = LaunchConfiguration('use_rviz')
+    use_lcd = LaunchConfiguration('use_lcd')
     use_lidar = LaunchConfiguration('use_lidar')
     start_joy_teleop = LaunchConfiguration('start_joy_teleop')
     start_keyboard_teleop = LaunchConfiguration('start_keyboard_teleop')
     start_localisation = LaunchConfiguration('start_localisation')
     start_nav2 = LaunchConfiguration('start_nav2')
-    use_nav2_rviz = LaunchConfiguration('use_nav2_rviz')
     bypass_twist_mux = LaunchConfiguration('bypass_twist_mux')
     config_file = LaunchConfiguration('config_file')
     twist_mux_config_file = LaunchConfiguration('twist_mux_config_file')
@@ -186,6 +185,13 @@ def generate_launch_description():
 
     selected_rviz = OpaqueFunction(function=_select_rviz)
 
+    lcd_startup = Node(
+        package='amr_bringup',
+        executable='lcd_startup',
+        output='screen',
+        condition=IfCondition(use_lcd),
+    )
+
     joy_node = Node(
         package='joy',
         executable='joy_node',
@@ -222,6 +228,11 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        DeclareLaunchArgument(
+            'use_lcd',
+            default_value='true',
+            description='Draw the startup mark on the physical I2C character LCD.',
+        ),
         DeclareLaunchArgument(
             'teleop',
             default_value='false',
@@ -327,7 +338,10 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'lidar_scan_mode',
             default_value='',
-            description='Optional RPLidar scan mode. Empty lets the driver choose the typical mode.',
+            description=(
+                'Optional RPLidar scan mode. Empty lets the driver choose '
+                'the typical mode.'
+            ),
         ),
         DeclareLaunchArgument(
             'joy_dev',
@@ -354,6 +368,7 @@ def generate_launch_description():
             default_value='100.0',
             description='Full-stick in-place turn wheel target used by joy_teleop.',
         ),
+        lcd_startup,
         selected_rviz,
         driver_launch,
         lidar_launch,
