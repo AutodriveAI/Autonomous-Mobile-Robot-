@@ -79,6 +79,7 @@ def _select_rviz(context):
 def generate_launch_description():
     use_lcd = LaunchConfiguration('use_lcd')
     use_lidar = LaunchConfiguration('use_lidar')
+    use_realsense = LaunchConfiguration('use_realsense')
     start_joy_teleop = LaunchConfiguration('start_joy_teleop')
     start_keyboard_teleop = LaunchConfiguration('start_keyboard_teleop')
     start_localisation = LaunchConfiguration('start_localisation')
@@ -143,6 +144,17 @@ def generate_launch_description():
             'scan_mode': lidar_scan_mode,
         }.items(),
         condition=IfCondition(use_lidar),
+    )
+
+    realsense_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(
+                amr_sensors_share,
+                'launch',
+                'realsense_d435i.launch.py',
+            )
+        ),
+        condition=IfCondition(use_realsense),
     )
 
     twist_mux_launch = IncludeLaunchDescription(
@@ -297,6 +309,14 @@ def generate_launch_description():
             description='Start the physical RPLidar driver and publish /scan.',
         ),
         DeclareLaunchArgument(
+            'use_realsense',
+            default_value='true',
+            description=(
+                'Start the physical RealSense D435i RGB-only stream on '
+                '/camera_rgb and /camera_rgb/compressed.'
+            ),
+        ),
+        DeclareLaunchArgument(
             'config_file',
             default_value=os.path.join(amr_driver_share, 'config', 'amr_driver.yaml'),
             description='Path to the amr_driver parameter YAML file.',
@@ -372,6 +392,7 @@ def generate_launch_description():
         selected_rviz,
         driver_launch,
         lidar_launch,
+        realsense_launch,
         description_launch,
         twist_mux_launch,
         localisation_launch,

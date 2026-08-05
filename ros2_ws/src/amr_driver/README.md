@@ -73,8 +73,8 @@ right_wheel_speed = linear.x + angular.z × wheel_separation / 2
 
 It converts each wheel speed into encoder ticks per second using the measured
 wheel circumference and `ticks_per_revolution`. The command is clamped to
-`max_ticks_per_second`, converted to integers, then sent repeatedly at
-`publish_rate_hz` as:
+`max_ticks_per_second`, converted to integers, then forwards every fresh
+`/cmd_vel` message as:
 
 ```text
 V,<left_ticks_per_second>,<right_ticks_per_second>\n
@@ -88,10 +88,11 @@ V,-20,20
 V,0,0
 ```
 
-Repeated transmission is deliberate: it refreshes the STM32 command timeout.
-If ROS stops publishing `/cmd_vel` for longer than `cmd_vel_timeout_s`, the
-driver sends `V,0,0` as a Jetson-side safety stop. The STM32 has its own
-independent watchdog as a second safety layer.
+Unchanged nonzero messages are still forwarded because their arrival proves
+that the active command source is alive. The driver does not generate nonzero
+keepalives itself. If ROS stops publishing `/cmd_vel` for longer than
+`cmd_vel_timeout_s`, the driver sends `V,0,0` as a Jetson-side safety stop. The
+STM32 has its own independent watchdog as a second safety layer.
 
 ## Feedback and odometry path
 
@@ -141,7 +142,7 @@ The most important values are:
 | `wheel_separation_m` | Distance between left/right wheel contact-center lines in metres. |
 | `ticks_per_revolution` | `20` for the present HC-020K single-channel 20-slit encoder disk on the wheel axle. |
 | `max_ticks_per_second` | ROS-side target limit. Currently `200 ticks/s`, matching the STM32 accepted `V` command cap. |
-| `publish_rate_hz` | Rate for refreshing wheel target commands. |
+| `publish_rate_hz` | Rate of the driver watchdog and odometry/TF publishing timers. |
 | `cmd_vel_timeout_s` | ROS-side duration without `/cmd_vel` before commanding a stop. |
 
 Accurate wheel radius and separation are necessary for correct speed scaling

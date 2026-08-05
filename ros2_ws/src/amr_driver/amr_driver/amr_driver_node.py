@@ -2,9 +2,8 @@
 
 Responsibilities
 -----------------
-1. Subscribe to geometry_msgs/Twist on `cmd_vel_topic`, convert to per-wheel
-   ticks/s using standard differential-drive kinematics, and stream `V,l,r`
-   commands to the STM32 at `publish_rate_hz`.
+1. Subscribe to geometry_msgs/Twist on `cmd_vel_topic`, convert each fresh
+   message to per-wheel ticks/s, and forward its `V,l,r` command to the STM32.
 2. Enforce a Jetson-side watchdog (`cmd_vel_timeout_s`) independent of the
    firmware's own 20 s command timeout -- this one is meant to actually be
    tight enough to matter if the driving process dies or the topic stalls.
@@ -110,7 +109,8 @@ class AmrDriverNode(Node):
             on_reply=self._on_reply,
         )
 
-        # This timer continually refreshes the STM32's command watchdog.
+        # This timer enforces the stale-command watchdog. Nonzero commands are
+        # sent by _cmd_vel_callback, not replayed by this timer.
         period_s = 1.0 / p['publish_rate_hz']
         self._command_timer = self.create_timer(period_s, self._command_timer_callback)
         # Publish ROS-facing odometry, TF, and joint states from the executor
@@ -142,7 +142,6 @@ class AmrDriverNode(Node):
         self.declare_parameter('ticks_per_revolution', 20)
         self.declare_parameter('max_ticks_per_second', 200.0)
         self.declare_parameter('min_nonzero_ticks_per_second', 0.0)
-        self.declare_parameter('refresh_nonzero_commands', True)
         self.declare_parameter('refresh_log_interval_s', 1.0)
 
     def _read_parameters(self) -> dict:
@@ -163,7 +162,6 @@ class AmrDriverNode(Node):
             'ticks_per_revolution': g('ticks_per_revolution').value,
             'max_ticks_per_second': g('max_ticks_per_second').value,
             'min_nonzero_ticks_per_second': g('min_nonzero_ticks_per_second').value,
-            'refresh_nonzero_commands': g('refresh_nonzero_commands').value,
             'refresh_log_interval_s': g('refresh_log_interval_s').value,
         }
 
@@ -218,6 +216,16 @@ class AmrDriverNode(Node):
             )
             self._last_logged_cmd_vel_command = command
 
+        # Forward every fresh nonzero command, even when its numeric value is
+        # unchanged. Nav2 publishes continuously while controlling the robot,
+        # so this keeps the STM32 watchdog alive without inventing commands in
+        # the driver's timer. Repeated zero commands may be safely suppressed.
+        self._send_velocity_command(
+            self._target_left_ticks,
+            self._target_right_ticks,
+            allow_identical=command != (0, 0),
+        )
+
     def _apply_min_nonzero_ticks(self, ticks: float) -> float:
         """Raise tiny nonzero wheel commands above the real drivetrain deadband."""
         minimum = float(self._p['min_nonzero_ticks_per_second'])
@@ -228,7 +236,7 @@ class AmrDriverNode(Node):
         return minimum if ticks > 0.0 else -minimum
 
     def _command_timer_callback(self) -> None:
-        """Refresh the MCU command or stop after cmd_vel goes stale.
+        """Stop the MCU command after cmd_vel goes stale.
 
         A non-positive timeout disables the ROS-side watchdog. In that mode,
         the active command remains under the cmd_vel publisher's control and
@@ -240,26 +248,19 @@ class AmrDriverNode(Node):
             # No fresh cmd_vel recently: fail safe rather than trust the
             # firmware's currently much longer 10 s timeout.
             self._send_velocity_command(0, 0)
-            return
-        self._send_velocity_command(
-            self._target_left_ticks, self._target_right_ticks)
 
-    def _send_velocity_command(self, left_ticks: int, right_ticks: int) -> None:
+    def _send_velocity_command(
+        self, left_ticks: int, right_ticks: int, allow_identical: bool = False
+    ) -> None:
         """Send V commands to the STM32.
 
         Stop commands are sent only once to avoid clogging the serial link with
-        repeated V,0,0 messages.
-
-        Nonzero commands are refreshed periodically even when unchanged. This
-        makes the real robot behavior easier to debug from logs and keeps the
-        STM32 explicitly reminded of the active command while Nav2 is trying to
-        move.
+        repeated V,0,0 messages. Fresh nonzero cmd_vel callbacks explicitly
+        allow identical commands so the STM32 sees the publisher's real stream.
         """
         command = (left_ticks, right_ticks)
         is_stop = command == (0, 0)
-        if command == self._last_sent_velocity_command and (
-            is_stop or not self._p['refresh_nonzero_commands']
-        ):
+        if command == self._last_sent_velocity_command and not allow_identical:
             return
 
         if command != self._last_logged_velocity_command:

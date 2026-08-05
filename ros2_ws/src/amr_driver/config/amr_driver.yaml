@@ -11,10 +11,9 @@ amr_driver_node:
     publish_tf: true
 
     publish_rate_hz: 20.0
-    # Zero disables the ROS-side stale-command stop while tuning Nav2. Nav2
-    # remains responsible for publishing cmd_vel=0; the STM32 firmware timeout
-    # is still the final fallback if communication stops completely.
-    cmd_vel_timeout_s: 0.0
+    # Forward fresh cmd_vel messages directly. If the selected publisher stops,
+    # command zero after this timeout rather than holding stale motion.
+    cmd_vel_timeout_s: 0.5
 
     # TODO: measure these on your actual robot -- everything else in this
     # node (cmd_vel scaling, odometry) is wrong until these are correct.
@@ -32,5 +31,4 @@ amr_driver_node:
     # by controller_server / velocity_smoother / twist_mux, not a compensated
     # command invented by amr_driver.
     min_nonzero_ticks_per_second: 0.0
-    refresh_nonzero_commands: false
     refresh_log_interval_s: 1.0

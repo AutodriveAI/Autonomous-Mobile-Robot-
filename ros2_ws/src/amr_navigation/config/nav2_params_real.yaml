@@ -15,7 +15,10 @@ bt_navigator:
 
     # Behavior Tree timing. 10 ms is the normal Nav2 default.
     bt_loop_duration: 10
-    default_server_timeout: 20
+    # Foxy's default 20 ms action response timeout is too tight on the Jetson
+    # when costmaps, AMCL, and DWB are active. Allow recovery goals enough time
+    # to be acknowledged without aborting the behavior tree with send_goal failed.
+    default_server_timeout: 1000
     wait_for_service_timeout: 1000
     enable_groot_monitoring: false
     default_bt_xml_filename: "/opt/ros/foxy/share/nav2_bt_navigator/behavior_trees/navigate_w_replanning_and_recovery.xml"
@@ -76,7 +79,9 @@ controller_server:
     progress_checker:
       plugin: nav2_controller::SimpleProgressChecker
       required_movement_radius: 0.15
-      movement_time_allowance: 10.0
+      # Final in-place heading correction does not count as translational
+      # progress, so allow enough time for it before declaring the robot stuck.
+      movement_time_allowance: 30.0
 
     goal_checker:
       plugin: nav2_controller::SimpleGoalChecker
@@ -99,9 +104,8 @@ controller_server:
       #   1.00 m/s  -> about V,98,98
       #   1.2252 m/s -> V,120,120 (maximum translation)
       #   1.00 rad/s turn -> about V,-9,9
-      #   5.00 rad/s turn -> about V,-43,43
-      #   11.50 rad/s turn -> about V,-99,99
-      #   11.6688 rad/s turn -> V,-100,100 (maximum rotation)
+      #   4.00 rad/s turn -> about V,-34,34 (minimum rotation)
+      #   6.00 rad/s turn -> about V,-51,51 (maximum rotation)
       #
       # Keep a useful physical command range instead of forcing every nonzero
       # correction to the maximum. The former near-identical minimum/maximum
@@ -110,7 +114,7 @@ controller_server:
       max_vel_x: 1.2252211349
       min_vel_y: 0.0
       max_vel_y: 0.0
-      max_vel_theta: 11.6687727133
+      max_vel_theta: 6.0
 
       # Physical robot minimum useful command.
       #
@@ -121,9 +125,9 @@ controller_server:
       min_speed_xy: 0.60
       max_speed_xy: 1.2252211349
 
-      # About V,-60,60: above the previously ineffective V,-30,30 command but
-      # sufficiently below the V,-100,100 maximum for heading corrections.
-      min_speed_theta: 7.0
+      # About V,-34,34: just above the previously ineffective V,-30,30 command,
+      # with a narrower range for smoother final corrections up to V,-51,51.
+      min_speed_theta: 4.0
 
       # Softer acceleration prevents a correction from immediately becoming
       # a maximum command and reduces overshoot when its sign changes.
@@ -212,8 +216,8 @@ local_costmap:
 
       inflation_layer:
         plugin: nav2_costmap_2d::InflationLayer
-        inflation_radius: 0.25
-        cost_scaling_factor: 3.0
+        inflation_radius: 0.16
+        cost_scaling_factor: 5.0
 
       always_send_full_costmap: true
 
@@ -253,8 +257,8 @@ global_costmap:
 
       inflation_layer:
         plugin: nav2_costmap_2d::InflationLayer
-        inflation_radius: 0.30
-        cost_scaling_factor: 3.0
+        inflation_radius: 0.20
+        cost_scaling_factor: 5.0
 
       always_send_full_costmap: true
 
@@ -301,8 +305,9 @@ recoveries_server:
       plugin: nav2_recoveries/Wait
 
     simulate_ahead_time: 2.0
-    max_rotational_vel: 11.6687727133
-    min_rotational_vel: 7.0
+    # Match the angular range tuned for DWB path following.
+    max_rotational_vel: 6.0
+    min_rotational_vel: 4.0
     rotational_acc_lim: 8.0
 
 waypoint_follower:

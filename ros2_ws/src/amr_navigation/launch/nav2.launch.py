@@ -220,7 +220,7 @@ def generate_launch_description():
             ),
             description=(
                 'Behavior tree XML. The default keeps recovery behavior but '
-                'slows replanning to once every 20 seconds for Jetson bringup.'
+                'slows replanning to once every 10 seconds for Jetson bringup.'
             ),
         ),
         DeclareLaunchArgument(

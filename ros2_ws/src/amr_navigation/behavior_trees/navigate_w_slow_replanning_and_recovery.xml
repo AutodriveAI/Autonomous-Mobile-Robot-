@@ -2,14 +2,14 @@
   Physical robot behavior tree for Jetson Nano bringup.
 
   This is the Foxy default "navigate_w_replanning_and_recovery" tree with the
-  replanning rate reduced from 1 Hz to 0.05 Hz, so the global path refreshes
-  about once every 20 seconds instead of every second.
+  replanning rate reduced from 1 Hz to 0.1 Hz, so the global path refreshes
+  about once every 10 seconds instead of every second.
 -->
 <root main_tree_to_execute="MainTree">
   <BehaviorTree ID="MainTree">
     <RecoveryNode number_of_retries="6" name="NavigateRecovery">
       <PipelineSequence name="NavigateWithSlowReplanning">
-        <RateController hz="0.05">
+        <RateController hz="0.1">
           <RecoveryNode number_of_retries="1" name="ComputePathToPose">
             <ComputePathToPose goal="{goal}" path="{path}" planner_id="GridBased"/>
             <ClearEntireCostmap name="ClearGlobalCostmap-Context" service_name="global_costmap/clear_entirely_global_costmap"/>
