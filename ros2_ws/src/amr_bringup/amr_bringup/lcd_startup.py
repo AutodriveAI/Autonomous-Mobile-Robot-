@@ -1,66 +1,17 @@
-"""Draw the AMR startup mark on the Jetson's I2C character LCD."""
+"""Backward-compatible one-shot renderer for the AMR LCD idle mark."""
 
 import sys
-from time import sleep
 
-
-I2C_ADDRESS = 0x27
-I2C_PORT = 0
-DISPLAY_COLUMNS = 20
-DISPLAY_ROWS = 4
+from amr_bringup.lcd_display import LcdDisplay
 
 
 def draw_startup_mark() -> None:
     """Clear the LCD and draw the four-line block startup mark."""
-    # Import here so a missing optional hardware dependency produces a clear
-    # message without preventing the rest of amr_bringup from being imported.
-    from RPLCD.i2c import CharLCD
-
-    lcd = CharLCD(
-        i2c_expander='PCF8574',
-        address=I2C_ADDRESS,
-        port=I2C_PORT,
-        cols=DISPLAY_COLUMNS,
-        rows=DISPLAY_ROWS,
-        charmap='A00',
-        auto_linebreaks=False,
-    )
-
-    lcd.clear()
-    sleep(0.2)
-
-    for row in range(DISPLAY_ROWS):
-        lcd.cursor_pos = (row, 0)
-        lcd.write_string(' ' * DISPLAY_COLUMNS)
-
-    sleep(0.1)
-
-    full_cell = (
-        0b11111,
-        0b11111,
-        0b11111,
-        0b11111,
-        0b11111,
-        0b11111,
-        0b11111,
-        0b11111,
-    )
-    lcd.create_char(0, full_cell)
-    block = chr(0)
-
-    cells = [
-        (0, 0),
-        (1, 1),
-        (2, 2),
-        *((3, column) for column in range(4, 13)),
-        (2, 13),
-        (1, 14),
-        (0, 15),
-    ]
-
-    for row, column in cells:
-        lcd.cursor_pos = (row, column)
-        lcd.write_string(block)
+    display = LcdDisplay()
+    try:
+        display.show_idle_mark()
+    finally:
+        display.close()
 
 
 def main() -> int:

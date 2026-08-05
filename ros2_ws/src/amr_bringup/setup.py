@@ -23,6 +23,7 @@ setup(
     entry_points={
         'console_scripts': [
             'lcd_startup = amr_bringup.lcd_startup:main',
+            'lcd_status = amr_bringup.lcd_status_node:main',
         ],
     },
 )

@@ -80,6 +80,12 @@ def generate_launch_description():
     use_lcd = LaunchConfiguration('use_lcd')
     use_lidar = LaunchConfiguration('use_lidar')
     use_realsense = LaunchConfiguration('use_realsense')
+    lcd_goal_received_duration_s = LaunchConfiguration(
+        'lcd_goal_received_duration_s'
+    )
+    lcd_goal_reached_duration_s = LaunchConfiguration(
+        'lcd_goal_reached_duration_s'
+    )
     start_joy_teleop = LaunchConfiguration('start_joy_teleop')
     start_keyboard_teleop = LaunchConfiguration('start_keyboard_teleop')
     start_localisation = LaunchConfiguration('start_localisation')
@@ -197,10 +203,15 @@ def generate_launch_description():
 
     selected_rviz = OpaqueFunction(function=_select_rviz)
 
-    lcd_startup = Node(
+    lcd_status = Node(
         package='amr_bringup',
-        executable='lcd_startup',
+        executable='lcd_status',
+        name='lcd_status',
         output='screen',
+        parameters=[{
+            'goal_received_duration_s': lcd_goal_received_duration_s,
+            'goal_reached_duration_s': lcd_goal_reached_duration_s,
+        }],
         condition=IfCondition(use_lcd),
     )
 
@@ -243,7 +254,25 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'use_lcd',
             default_value='true',
-            description='Draw the startup mark on the physical I2C character LCD.',
+            description=(
+                'Start the physical LCD navigation-status display.'
+            ),
+        ),
+        DeclareLaunchArgument(
+            'lcd_goal_received_duration_s',
+            default_value='10.0',
+            description=(
+                'Seconds to show the new-goal message before restoring the '
+                'idle mark.'
+            ),
+        ),
+        DeclareLaunchArgument(
+            'lcd_goal_reached_duration_s',
+            default_value='20.0',
+            description=(
+                'Seconds to show the goal-reached message. Zero keeps it '
+                'visible until another goal is received.'
+            ),
         ),
         DeclareLaunchArgument(
             'teleop',
@@ -388,7 +417,7 @@ def generate_launch_description():
             default_value='100.0',
             description='Full-stick in-place turn wheel target used by joy_teleop.',
         ),
-        lcd_startup,
+        lcd_status,
         selected_rviz,
         driver_launch,
         lidar_launch,

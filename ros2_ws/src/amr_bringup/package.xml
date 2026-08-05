@@ -14,9 +14,11 @@
   <exec_depend>amr_sensors</exec_depend>
   <exec_depend>amr_slam</exec_depend>
   <exec_depend>amr_teleop</exec_depend>
+  <exec_depend>action_msgs</exec_depend>
   <exec_depend>joy</exec_depend>
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
+  <exec_depend>rclpy</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
