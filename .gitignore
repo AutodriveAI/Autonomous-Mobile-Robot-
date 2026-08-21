@@ -19,5 +19,6 @@ diff_drive_stm32controller/MyProject/.settings/language.settings.xml
 .pytest_cache/
 
 # Local editor and operating-system files.
-.vscode/
+.vscode/*
+!.vscode/settings.json
 .DS_Store
