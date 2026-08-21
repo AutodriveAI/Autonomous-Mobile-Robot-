@@ -76,7 +76,7 @@ def install_launcher(package_prefix: Path, home: Path) -> list:
         "Exec=\"{}\"".format(wrapper),
         "Icon={}".format(icon),
         "Terminal=false",
-        "Categories=Development;Science;",
+        "Categories=Development;",
         "StartupNotify=true",
         "StartupWMClass=amr-operator-gui",
         "",
