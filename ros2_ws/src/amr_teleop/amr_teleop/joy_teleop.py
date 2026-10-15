@@ -68,8 +68,9 @@ class JoyTeleop(Node):
         self.declare_parameter('linear_axis_sign', 1.0)
         self.declare_parameter('angular_axis_sign', 1.0)
 
-        # Optional buttons.  By default no deadman button is required.  If you
-        # want one later, set enable_button to a valid button index.
+        # Optional buttons. Bringup configures the Logitech left bumper
+        # (button 4) as the deadman; the standalone node keeps -1 as a safe,
+        # backwards-compatible default unless explicitly configured.
         self.declare_parameter('enable_button', -1)
         self.declare_parameter('stop_button', -1)
 
@@ -132,11 +133,12 @@ class JoyTeleop(Node):
 
         self.get_logger().info(
             'joy_teleop: /%s -> /%s, full stick = %.1f ticks/s straight, '
-            '%.1f ticks/s turn' % (
+            '%.1f ticks/s turn, deadman button = %d' % (
                 self._joy_topic,
                 self._cmd_vel_topic,
                 self._speed_ticks_per_second,
                 self._turn_ticks_per_second,
+                self._enable_button,
             )
         )
 

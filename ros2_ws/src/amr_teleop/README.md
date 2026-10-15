@@ -122,6 +122,7 @@ cd ~/Github/Autonomous-Mobile-Robot-/ros2_ws
 source /opt/ros/humble/setup.bash
 source install/setup.bash
 ros2 run amr_teleop joy_teleop --ros-args \
+  -p enable_button:=4 \
   -p speed_ticks_per_second:=100.0 \
   -p turn_ticks_per_second:=100.0
 ```
@@ -130,9 +131,15 @@ Default joystick mapping:
 
 | Control | Meaning |
 |---|---|
+| Left bumper (`buttons[4]`) | Hold to enable motion; releasing it sends one zero command |
 | Left stick vertical | Forward/backward |
 | Left stick horizontal | Rotate left/right |
-| Centered stick | Publish zero velocity |
+| Centered stick | Send one zero command |
+
+The real and simulation bringup launch files use button `4` as the deadman by
+default. If the controller reports the intended button at a different index,
+launch with `joy_enable_button:=<index>`. Setting it to `-1` disables the
+deadman requirement.
 
 If your Logitech mode switch reverses an axis, override the sign:
 

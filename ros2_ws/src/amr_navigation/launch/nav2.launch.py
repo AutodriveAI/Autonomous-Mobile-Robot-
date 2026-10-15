@@ -27,8 +27,6 @@ def generate_launch_description():
     autonomous navigation.
     """
     package_share = get_package_share_directory('amr_navigation')
-    nav2_bringup_share = get_package_share_directory('nav2_bringup')
-
     params_file = LaunchConfiguration('params_file')
     use_sim_time = LaunchConfiguration('use_sim_time')
     autostart = LaunchConfiguration('autostart')
@@ -194,11 +192,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             'rviz_config',
-            default_value=os.path.join(
-                nav2_bringup_share,
-                'rviz',
-                'nav2_default_view.rviz',
-            ),
+            default_value=os.path.join(package_share, 'rviz', 'nav2_real_robot.rviz'),
             description='RViz config used for Nav2 goal setting and monitoring.',
         ),
         DeclareLaunchArgument(

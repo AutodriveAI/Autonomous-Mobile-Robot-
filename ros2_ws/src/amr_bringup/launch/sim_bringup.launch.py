@@ -2,25 +2,75 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
+
+
+def _is_true(value: str) -> bool:
+    return value.lower() in ('true', '1', 'yes', 'on')
+
+
+def _select_rviz(context):
+    """Start one RViz config appropriate for the selected sim bringup mode."""
+    if not _is_true(LaunchConfiguration('use_rviz').perform(context)):
+        return []
+
+    start_nav2 = _is_true(LaunchConfiguration('start_nav2').perform(context))
+    start_localisation = _is_true(
+        LaunchConfiguration('start_localisation').perform(context))
+
+    if start_nav2 or start_localisation:
+        return [
+            Node(
+                package='rviz2',
+                executable='rviz2',
+                name='rviz2_nav2',
+                output='screen',
+                arguments=[
+                    '-d',
+                    os.path.join(
+                        get_package_share_directory('amr_navigation'),
+                        'rviz',
+                        'nav2_real_robot.rviz',
+                    ),
+                ],
+            )
+        ]
+
+    return [
+        Node(
+            package='rviz2',
+            executable='rviz2',
+            name='rviz2_sim_bringup',
+            output='screen',
+            arguments=[
+                '-d',
+                os.path.join(
+                    get_package_share_directory('amr_description'),
+                    'rviz',
+                    'display.rviz',
+                ),
+            ],
+        )
+    ]
 
 
 def generate_launch_description():
     start_joy_teleop = LaunchConfiguration('start_joy_teleop')
     start_keyboard_teleop = LaunchConfiguration('start_keyboard_teleop')
+    start_localisation = LaunchConfiguration('start_localisation')
     start_nav2 = LaunchConfiguration('start_nav2')
     use_rviz = LaunchConfiguration('use_rviz')
-    use_nav2_rviz = LaunchConfiguration('use_nav2_rviz')
     world = LaunchConfiguration('world')
     map_file = LaunchConfiguration('map')
     nav2_params_file = LaunchConfiguration('nav2_params_file')
     joy_dev = LaunchConfiguration('joy_dev')
     joy_deadzone = LaunchConfiguration('joy_deadzone')
     joy_autorepeat_rate = LaunchConfiguration('joy_autorepeat_rate')
+    joy_enable_button = LaunchConfiguration('joy_enable_button')
     teleop_speed_ticks_per_second = LaunchConfiguration('teleop_speed_ticks_per_second')
     teleop_turn_ticks_per_second = LaunchConfiguration('teleop_turn_ticks_per_second')
     extra_gazebo_model_path = LaunchConfiguration('extra_gazebo_model_path')
@@ -30,6 +80,10 @@ def generate_launch_description():
     amr_navigation_share = get_package_share_directory('amr_navigation')
     amr_slam_share = get_package_share_directory('amr_slam')
 
+    localisation_active = PythonExpression([
+        "'", start_localisation, "' == 'true' or '", start_nav2, "' == 'true'"
+    ])
+
     sim_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(amr_description_share, 'launch', 'sim.launch.py')
@@ -38,18 +92,6 @@ def generate_launch_description():
             'world': world,
             'extra_gazebo_model_path': extra_gazebo_model_path,
         }.items(),
-    )
-
-    rviz_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(amr_description_share, 'launch', 'display.launch.py')
-        ),
-        launch_arguments={
-            'use_gui': 'false',
-            'use_rviz': 'true',
-            'use_joint_state_publisher': 'false',
-        }.items(),
-        condition=IfCondition(use_rviz),
     )
 
     twist_mux_launch = IncludeLaunchDescription(
@@ -71,7 +113,7 @@ def generate_launch_description():
             'scan_topic': '/scan',
             'use_rviz': 'false',
         }.items(),
-        condition=IfCondition(start_nav2),
+        condition=IfCondition(localisation_active),
     )
 
     nav2_launch = IncludeLaunchDescription(
@@ -81,10 +123,14 @@ def generate_launch_description():
         launch_arguments={
             'params_file': nav2_params_file,
             'use_sim_time': 'true',
-            'use_rviz': use_nav2_rviz,
+            # sim_bringup owns the one-RViz policy. When localization/Nav2 is
+            # active, _select_rviz starts the Nav2 RViz config.
+            'use_rviz': 'false',
         }.items(),
         condition=IfCondition(start_nav2),
     )
+
+    selected_rviz = OpaqueFunction(function=_select_rviz)
 
     keyboard_teleop = Node(
         package='amr_teleop',
@@ -115,6 +161,7 @@ def generate_launch_description():
         output='screen',
         remappings=[('cmd_vel', '/cmd_vel_joy')],
         parameters=[{
+            'enable_button': joy_enable_button,
             'speed_ticks_per_second': teleop_speed_ticks_per_second,
             'turn_ticks_per_second': teleop_turn_ticks_per_second,
         }],
@@ -144,6 +191,14 @@ def generate_launch_description():
             ),
         ),
         DeclareLaunchArgument(
+            'start_localisation',
+            default_value='false',
+            description=(
+                'Start AMCL localization and map server for Gazebo without '
+                'starting Nav2.'
+            ),
+        ),
+        DeclareLaunchArgument(
             'use_rviz',
             default_value='true',
             description='Start RViz with Gazebo joint states instead of fake joints.',
@@ -151,7 +206,10 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'use_nav2_rviz',
             default_value='false',
-            description='Start RViz with the standard Nav2 goal-setting panel.',
+            description=(
+                'Deprecated/no-op. RViz is selected by use_rviz plus '
+                'start_localisation/start_nav2.'
+            ),
         ),
         DeclareLaunchArgument(
             'world',
@@ -202,6 +260,14 @@ def generate_launch_description():
             description='Rate at which joy_node republishes held joystick state.',
         ),
         DeclareLaunchArgument(
+            'joy_enable_button',
+            default_value='4',
+            description=(
+                'Deadman button index used by joy_teleop. The Logitech left '
+                'bumper is normally button 4; use -1 to disable the deadman.'
+            ),
+        ),
+        DeclareLaunchArgument(
             'teleop_speed_ticks_per_second',
             default_value='100.0',
             description='Full-stick forward wheel target used by joy_teleop.',
@@ -211,8 +277,8 @@ def generate_launch_description():
             default_value='100.0',
             description='Full-stick in-place turn wheel target used by joy_teleop.',
         ),
+        selected_rviz,
         sim_launch,
-        rviz_launch,
         twist_mux_launch,
         localisation_launch,
         nav2_launch,

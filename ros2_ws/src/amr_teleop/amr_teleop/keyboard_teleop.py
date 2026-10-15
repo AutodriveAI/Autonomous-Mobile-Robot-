@@ -33,9 +33,7 @@ def _append_default_parameter(parameter_name: str, value: float) -> None:
     if '--ros-args' not in sys.argv:
         sys.argv.append('--ros-args')
 
-    sys.argv.extend(['-p', f'{parameter_name}:={value}'])
-
-
+    sys.argv.extend(['-p', f'{parameter_name}:={va
 def main() -> None:
     """Run standard keyboard teleop with AMR-specific speed defaults."""
     _append_default_parameter('speed', 1.021)

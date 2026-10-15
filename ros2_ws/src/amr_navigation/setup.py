@@ -21,6 +21,9 @@ setup(
             'config/nav2_params.yaml',
             'config/nav2_params_real.yaml',
         ]),
+        ('share/' + package_name + '/rviz', [
+            'rviz/nav2_real_robot.rviz',
+        ]),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

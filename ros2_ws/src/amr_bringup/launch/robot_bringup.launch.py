@@ -22,7 +22,7 @@ def _select_rviz(context):
     start_localisation = _is_true(
         LaunchConfiguration('start_localisation').perform(context))
 
-    if start_nav2:
+    if start_nav2 or start_localisation:
         return [
             Node(
                 package='rviz2',
@@ -32,27 +32,9 @@ def _select_rviz(context):
                 arguments=[
                     '-d',
                     os.path.join(
-                        get_package_share_directory('nav2_bringup'),
+                        get_package_share_directory('amr_navigation'),
                         'rviz',
-                        'nav2_default_view.rviz',
-                    ),
-                ],
-            )
-        ]
-
-    if start_localisation:
-        return [
-            Node(
-                package='rviz2',
-                executable='rviz2',
-                name='rviz2_localisation',
-                output='screen',
-                arguments=[
-                    '-d',
-                    os.path.join(
-                        get_package_share_directory('amr_localisation'),
-                        'rviz',
-                        'localisation.rviz',
+                        'nav2_real_robot.rviz',
                     ),
                 ],
             )
@@ -95,6 +77,7 @@ def generate_launch_description():
     joy_dev = LaunchConfiguration('joy_dev')
     joy_deadzone = LaunchConfiguration('joy_deadzone')
     joy_autorepeat_rate = LaunchConfiguration('joy_autorepeat_rate')
+    joy_enable_button = LaunchConfiguration('joy_enable_button')
     teleop_speed_ticks_per_second = LaunchConfiguration('teleop_speed_ticks_per_second')
     teleop_turn_ticks_per_second = LaunchConfiguration('teleop_turn_ticks_per_second')
 
@@ -204,6 +187,7 @@ def generate_launch_description():
         output='screen',
         remappings=[('cmd_vel', '/cmd_vel_joy')],
         parameters=[{
+            'enable_button': joy_enable_button,
             'speed_ticks_per_second': teleop_speed_ticks_per_second,
             'turn_ticks_per_second': teleop_turn_ticks_per_second,
         }],
@@ -245,7 +229,7 @@ def generate_launch_description():
             default_value='false',
             description=(
                 'Start physical robot localization only. If use_rviz is true '
-                'and start_nav2 is false, this opens the localization RViz config.'
+                'and start_nav2 is false, this opens the Nav2 RViz config.'
             ),
         ),
         DeclareLaunchArgument(
@@ -336,6 +320,14 @@ def generate_launch_description():
             'joy_autorepeat_rate',
             default_value='20.0',
             description='Rate at which joy_node republishes held joystick state.',
+        ),
+        DeclareLaunchArgument(
+            'joy_enable_button',
+            default_value='4',
+            description=(
+                'Deadman button index used by joy_teleop. The Logitech left '
+                'bumper is normally button 4; use -1 to disable the deadman.'
+            ),
         ),
         DeclareLaunchArgument(
             'teleop_speed_ticks_per_second',
